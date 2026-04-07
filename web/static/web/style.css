@@ -1,0 +1,147 @@
+:root {
+    --bg-color: #f4f4f4;
+    --container-bg: #ffffff;
+    --text-color: #000000;
+    --banner-bg: #F2992E;
+    --banner-border: rgba(0, 0, 0, 0.05);
+    --input-bg: #ffffff;
+    --input-border: #000000;
+    --cta-bg: #F2992E;
+    --cta-hover: #e08a1d;
+    --cta-text: #ffffff;
+    --error-color: #EB5757;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode {
+    --bg-color: #1a1a1a;
+    --container-bg: #2d2d2d;
+    --text-color: #f4f4f4;
+    --banner-bg: #b36b19; /* Taronja més fosc per al mode nit */
+    --banner-border: rgba(255, 255, 255, 0.1);
+    --input-bg: #3d3d3d;
+    --input-border: #555555;
+    --cta-bg: #F2992E;
+    --cta-hover: #ffad42;
+    --cta-text: #000000;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+body {
+    font-family: 'Sans-Serif', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.app-banner {
+    background-color: var(--banner-bg);
+    width: 100%;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    height: 80px;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--banner-border);
+    position: relative;
+}
+
+.app-logo {
+    height: 180%;
+    width: auto;
+    object-fit: contain;
+    align-self: center;
+    margin-top: -5px;
+    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));
+}
+
+.container {
+    background: var(--container-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px var(--shadow-color);
+    width: 90%;
+    max-width: 500px;
+    margin: 0 auto;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Lexend', sans-serif;
+}
+
+.cta-button {
+    background-color: var(--cta-bg);
+    color: var(--cta-text);
+    border: 1px solid var(--input-border);
+    padding: 0.75rem;
+    border-radius: 4px;
+    width: 100%;
+    font-size: 1rem;
+    cursor: pointer;
+    font-family: 'Lexend', sans-serif;
+    margin-top: 10px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.cta-button:hover {
+    background-color: var(--cta-hover);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: 'Sans-Serif', sans-serif;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.error {
+    color: var(--error-color);
+    margin-bottom: 1rem;
+}
+
+/* Toggle Switch Styles */
+.theme-toggle {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    background: var(--container-bg);
+    border: 1px solid var(--input-border);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-family: 'Lexend', sans-serif;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s;
+}
+
+.theme-toggle:hover {
+    filter: brightness(1.1);
+}

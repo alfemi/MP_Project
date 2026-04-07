@@ -1,0 +1,33 @@
+{% extends 'web/base.html' %}
+
+{% block content %}
+    <h2>Register</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+        
+        <h3>Compte</h3>
+        <input type="text" name="user_name" placeholder="Username" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        
+        <h3>Informació Personal</h3>
+        <input type="text" name="address" placeholder="Adreça" required>
+        <input type="text" name="language" placeholder="Idioma" required>
+        <input type="number" name="age" placeholder="Edat" required>
+        
+        <label for="sex">Sexe:</label>
+        <select name="sex" id="sex" required>
+            <option value="male">Home</option>
+            <option value="female">Dona</option>
+        </select>
+        
+        <h3>Preferències</h3>
+        <textarea name="preferences" placeholder="Explica'ns les teves sèries i gèneres preferits..." rows="4"></textarea>
+        
+        <button type="submit" class="cta-button">Register</button>
+    </form>
+    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+{% endblock %}
