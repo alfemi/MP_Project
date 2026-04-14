@@ -89,6 +89,13 @@
         text-align: center; padding: 10px;
     }
 
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
     /* EL OVERLAY QUE MUESTRA EL GÉNERO AL HACER HOVER */
     .card-overlay {
         position: absolute;
@@ -167,10 +174,14 @@
                 </div>
                 {% endif %}
 
+                {% if movie.image_url %}
+                <img src="{{ movie.image_url }}" alt="{{ movie.title }}" class="card-image">
+                {% else %}
                 <div class="card-placeholder">
                     <strong>{{ movie.title }}</strong>
                     <small style="color:var(--netflix-red); font-size:0.7rem;">{{ movie.director_name }}</small>
                 </div>
+                {% endif %}
 
                 <!-- AQUÍ SE MUESTRA EL GÉNERO EN HOVER -->
                 <div class="card-overlay">
@@ -197,11 +208,28 @@
         <div class="content-grid">
             {% for serie in series %}
             <article class="card-item {% if serie.is_blocked %}is-blocked{% endif %}">
+                {% if serie.is_blocked %}
+                <div class="lock-overlay">
+                    <span style="font-size:1.5rem;">🔒</span>
+                    <span style="background:var(--netflix-red); padding:2px 8px; border-radius:4px; font-size:0.7rem; margin-top:5px;">{{ serie.block_message }}</span>
+                </div>
+                {% endif %}
+
+                {% if serie.image_url %}
+                <img src="{{ serie.image_url }}" alt="{{ serie.title }}" class="card-image">
+                {% else %}
                 <div class="card-placeholder">
                     <strong>{{ serie.title }}</strong>
                 </div>
+                {% endif %}
                 <div class="card-overlay">
-                    <span class="card-tag">Serie</span>
+                    <span class="card-tag">
+                        {% if serie.genre_description %}
+                            {{ serie.genre_description }}
+                        {% else %}
+                            Serie
+                        {% endif %}
+                    </span>
                     <div class="card-meta">
                         <span>{{ serie.year }}</span> • <span>⭐ {{ serie.rating }}</span>
                     </div>

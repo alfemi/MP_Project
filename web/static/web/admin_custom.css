@@ -1,0 +1,464 @@
+/*
+ * StreamSync Admin – Custom theme
+ * Estil alineat amb la web: dark mode, Netflix-red (#E50914), Lexend font.
+ * Sobreescriu mínim de Django Admin per mantenir la mantenibilitat.
+ */
+
+/* ── Variables ─────────────────────────────────────── */
+:root {
+  --ss-bg:       #0f0f0f;
+  --ss-surface:  #1a1a1a;
+  --ss-surface2: #222;
+  --ss-border:   #2e2e2e;
+  --ss-red:      #e50914;
+  --ss-red-dark: #b0060f;
+  --ss-green:    #46d369;
+  --ss-amber:    #f5a623;
+  --ss-text:     #e8e8e8;
+  --ss-muted:    #888;
+  --ss-font:     'Lexend', 'Segoe UI', sans-serif;
+}
+
+/* ── Base ───────────────────────────────────────────── */
+html, body,
+#container {
+  background: var(--ss-bg) !important;
+  color: var(--ss-text) !important;
+  font-family: var(--ss-font) !important;
+}
+
+/* ── Header / Branding ──────────────────────────────── */
+#header {
+  background: #111 !important;
+  border-bottom: 2px solid var(--ss-red) !important;
+  padding: 0 20px !important;
+  height: 56px;
+  display: flex;
+  align-items: center;
+}
+
+.ss-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.ss-logo-mark {
+  color: var(--ss-red);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.ss-logo-text {
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.ss-admin-label {
+  background: var(--ss-red);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 2px;
+}
+
+#user-tools {
+  color: var(--ss-muted) !important;
+  font-size: 0.82rem;
+}
+
+#user-tools a {
+  color: var(--ss-muted) !important;
+  transition: color 0.2s;
+}
+
+#user-tools a:hover {
+  color: var(--ss-red) !important;
+}
+
+/* ── Nav / Breadcrumbs ──────────────────────────────── */
+#nav-sidebar {
+  background: var(--ss-surface) !important;
+  border-right: 1px solid var(--ss-border) !important;
+}
+
+.module caption,
+.app-StreamSync caption {
+  background: var(--ss-red) !important;
+  color: #fff !important;
+}
+
+div.breadcrumbs {
+  background: var(--ss-surface) !important;
+  border-bottom: 1px solid var(--ss-border) !important;
+  color: var(--ss-muted) !important;
+  font-size: 0.82rem;
+  padding: 8px 20px;
+}
+
+div.breadcrumbs a {
+  color: var(--ss-muted) !important;
+}
+
+div.breadcrumbs a:hover {
+  color: var(--ss-text) !important;
+}
+
+/* ── Content area ───────────────────────────────────── */
+#content,
+#content-main,
+.colMS #content {
+  background: var(--ss-bg) !important;
+}
+
+/* ── Modules (index cards) ──────────────────────────── */
+.module {
+  background: var(--ss-surface) !important;
+  border: 1px solid var(--ss-border) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.module h2,
+.module caption {
+  background: var(--ss-surface2) !important;
+  color: var(--ss-text) !important;
+  border-bottom: 1px solid var(--ss-border) !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 14px;
+}
+
+.module table th {
+  color: var(--ss-muted) !important;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Index page app list ────────────────────────────── */
+#content-main .app-web .section:first-child caption  {
+  background: var(--ss-red) !important;
+}
+
+.app-list td,
+.app-list th {
+  border-color: var(--ss-border) !important;
+}
+
+/* ── Change list (table) ────────────────────────────── */
+#changelist table {
+  border: none !important;
+}
+
+#changelist table thead th {
+  background: var(--ss-surface2) !important;
+  color: var(--ss-muted) !important;
+  border-bottom: 1px solid var(--ss-border) !important;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#changelist table thead th a {
+  color: var(--ss-muted) !important;
+}
+
+#changelist table thead th a:hover {
+  color: var(--ss-text) !important;
+}
+
+#changelist table tbody tr {
+  background: var(--ss-surface) !important;
+  border-bottom: 1px solid var(--ss-border) !important;
+  transition: background 0.15s;
+}
+
+#changelist table tbody tr:hover {
+  background: var(--ss-surface2) !important;
+}
+
+#changelist table tbody td,
+#changelist table tbody th {
+  color: var(--ss-text) !important;
+  border: none !important;
+  padding: 10px 14px;
+}
+
+#changelist table tbody td a {
+  color: var(--ss-red) !important;
+  font-weight: 600;
+}
+
+#changelist table tbody td a:hover {
+  color: #ff2832 !important;
+}
+
+/* ── Filters sidebar (changelist) ───────────────────── */
+#changelist-filter {
+  background: var(--ss-surface) !important;
+  border-left: 1px solid var(--ss-border) !important;
+}
+
+#changelist-filter h2 {
+  background: var(--ss-surface2) !important;
+  color: var(--ss-muted) !important;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--ss-border) !important;
+}
+
+#changelist-filter h3 {
+  color: var(--ss-muted) !important;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#changelist-filter ul li a {
+  color: var(--ss-muted) !important;
+}
+
+#changelist-filter ul li.selected a,
+#changelist-filter ul li a:hover {
+  color: var(--ss-text) !important;
+}
+
+/* ── Search bar ─────────────────────────────────────── */
+#toolbar {
+  background: var(--ss-surface) !important;
+  border-bottom: 1px solid var(--ss-border) !important;
+  padding: 8px 14px;
+}
+
+#searchbar {
+  background: var(--ss-surface2) !important;
+  border: 1px solid var(--ss-border) !important;
+  color: var(--ss-text) !important;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+#searchbar:focus {
+  border-color: var(--ss-red) !important;
+  outline: none;
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+.button,
+input[type=submit],
+input[type=button],
+.submit-row input,
+a.button {
+  background: var(--ss-red) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-family: var(--ss-font) !important;
+  font-weight: 600 !important;
+  transition: background 0.2s !important;
+  cursor: pointer;
+}
+
+.button:hover,
+input[type=submit]:hover,
+.submit-row input:hover,
+a.button:hover {
+  background: var(--ss-red-dark) !important;
+}
+
+.button.default,
+input[type=submit].default {
+  background: var(--ss-red) !important;
+}
+
+/* Delete / danger buttons */
+.deletelink,
+a.deletelink {
+  background: #4a0000 !important;
+  color: #ff6b6b !important;
+}
+
+.deletelink:hover {
+  background: var(--ss-red) !important;
+  color: #fff !important;
+}
+
+/* ── Forms (change/add views) ───────────────────────── */
+.form-row {
+  border-bottom: 1px solid var(--ss-border) !important;
+}
+
+fieldset {
+  background: var(--ss-surface) !important;
+  border: 1px solid var(--ss-border) !important;
+  border-radius: 8px !important;
+  margin-bottom: 16px;
+}
+
+fieldset h2,
+fieldset legend {
+  color: var(--ss-muted) !important;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--ss-border) !important;
+}
+
+label {
+  color: var(--ss-muted) !important;
+  font-size: 0.82rem;
+}
+
+input[type=text],
+input[type=email],
+input[type=password],
+input[type=number],
+input[type=url],
+textarea,
+select {
+  background: var(--ss-surface2) !important;
+  border: 1px solid var(--ss-border) !important;
+  color: var(--ss-text) !important;
+  border-radius: 6px !important;
+  font-family: var(--ss-font) !important;
+}
+
+input[type=text]:focus,
+input[type=email]:focus,
+input[type=password]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--ss-red) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(229,9,20,0.25) !important;
+}
+
+.help {
+  color: var(--ss-muted) !important;
+  font-size: 0.78rem;
+}
+
+/* ── Submit row ─────────────────────────────────────── */
+.submit-row {
+  background: var(--ss-surface) !important;
+  border-top: 1px solid var(--ss-border) !important;
+  border-radius: 0 0 8px 8px;
+  padding: 12px 14px;
+}
+
+/* ── Messages (success, error) ──────────────────────── */
+.messagelist li {
+  background: var(--ss-surface2) !important;
+  border-left: 4px solid var(--ss-red) !important;
+  color: var(--ss-text) !important;
+  border-radius: 0 6px 6px 0;
+}
+
+.messagelist li.success {
+  border-left-color: var(--ss-green) !important;
+}
+
+.messagelist li.warning {
+  border-left-color: var(--ss-amber) !important;
+}
+
+/* ── Pagination ─────────────────────────────────────── */
+.paginator {
+  color: var(--ss-muted) !important;
+}
+
+.paginator a {
+  color: var(--ss-red) !important;
+}
+
+/* ── Date hierarchy ─────────────────────────────────── */
+.xfull div.date-hierarchy {
+  background: var(--ss-surface) !important;
+}
+
+/* ── Inline groups ──────────────────────────────────── */
+.inline-group {
+  background: var(--ss-surface) !important;
+  border: 1px solid var(--ss-border) !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.inline-group h2 {
+  background: var(--ss-surface2) !important;
+  color: var(--ss-muted) !important;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── Checkboxes (actions) ───────────────────────────── */
+td.action-checkbox,
+th.action-checkbox-column {
+  background: inherit;
+}
+
+/* ── Object tools (top right in change view) ────────── */
+ul.object-tools li a {
+  background: var(--ss-surface2) !important;
+  color: var(--ss-text) !important;
+  border: 1px solid var(--ss-border) !important;
+  border-radius: 6px;
+}
+
+ul.object-tools li a:hover {
+  background: var(--ss-red) !important;
+  border-color: var(--ss-red) !important;
+}
+
+/* ── Recent actions sidebar ─────────────────────────── */
+#recent-actions-module {
+  background: var(--ss-surface) !important;
+  border: 1px solid var(--ss-border) !important;
+  border-radius: 8px;
+}
+
+#recent-actions-module h2 {
+  background: var(--ss-surface2) !important;
+  color: var(--ss-muted) !important;
+}
+
+.actionlist li {
+  border-bottom: 1px solid var(--ss-border) !important;
+  color: var(--ss-muted) !important;
+}
+
+.actionlist li a {
+  color: var(--ss-red) !important;
+}
+
+/* ── Scrollbar (Webkit) ─────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ss-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ss-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ss-red);
+}

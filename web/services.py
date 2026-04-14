@@ -1,6 +1,12 @@
-import requests
 import concurrent.futures
+import logging
+
+import requests
 from django.conf import settings
+
+
+logger = logging.getLogger(__name__)
+
 
 class StreamApiService:
     @staticmethod
@@ -25,7 +31,7 @@ class StreamApiService:
                 return response.json()
             return []
         except Exception as e:
-            print(f"❌ Error en {url}: {e}")
+            logger.warning("Error calling Stream API %s: %s", url, e)
             return []
 
     @classmethod

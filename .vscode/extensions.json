@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.pylance",
+    "ms-python.black-formatter",
+    "charliermarsh.ruff",
+    "batisteo.vscode-django",
+    "mtxr.sqltools",
+    "alexcvzz.vscode-sqlite",
+    "eamodio.gitlens"
+  ]
+}

@@ -1,0 +1,23 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | StreamSync Admin{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+    <a href="{% url 'admin:index' %}" class="ss-brand">
+        <span class="ss-logo-mark">▶</span>
+        <span class="ss-logo-text">StreamSync</span>
+        <span class="ss-admin-label">admin</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'web/admin_custom.css' %}">
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
