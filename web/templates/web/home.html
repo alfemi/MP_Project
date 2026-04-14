@@ -1,7 +1,215 @@
 {% extends 'web/base.html' %}
 
 {% block content %}
-    <h2>Welcome, {{ user.user_name }}!</h2>
-    <p>This is your home page.</p>
-    <a href="#">Logout</a>
+<style>
+    :root {
+        --netflix-red: #E50914;
+        --dark-bg: #141414;
+        --card-bg: #181818;
+        --text-main: #ffffff;
+        --text-muted: #a3a3a3;
+    }
+
+    .full-width-wrapper {
+        width: 100vw;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+        background-color: var(--dark-bg);
+        overflow-x: hidden;
+        min-height: 100vh;
+    }
+
+    /* FILTROS */
+    .filter-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        padding: 15px 5%;
+        background: rgba(20, 20, 20, 0.95);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .nav-tabs { display: flex; gap: 20px; }
+    .nav-tab { color: var(--text-muted); text-decoration: none; transition: 0.3s; }
+    .nav-tab:hover, .nav-tab.active { color: white; font-weight: bold; }
+
+    .search-filter-group { display: flex; gap: 10px; }
+
+    /* SELECTORES OSCUROS (Tu corrección visual) */
+    .search-input, .genre-select {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid #444;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+    }
+
+    .genre-select {
+        appearance: none;
+        -webkit-appearance: none;
+        padding-right: 30px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 14px;
+    }
+
+    .genre-select option { background: var(--card-bg); color: white; }
+
+    /* GRID Y CARDS */
+    .rows-container { padding: 40px 5%; }
+    .content-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 30px;
+    }
+
+    .card-item {
+        position: relative;
+        aspect-ratio: 16/9;
+        background: #1f1f1f;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: transform 0.4s ease;
+    }
+
+    .card-item:hover { transform: scale(1.08); z-index: 10; }
+
+    .card-placeholder {
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        background: linear-gradient(145deg, #252525, #111);
+        text-align: center; padding: 10px;
+    }
+
+    /* EL OVERLAY QUE MUESTRA EL GÉNERO AL HACER HOVER */
+    .card-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 20%, transparent 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 15px;
+        opacity: 0; /* Oculto por defecto */
+        transition: opacity 0.3s ease;
+    }
+
+    .card-item:hover .card-overlay {
+        opacity: 1; /* Visible al pasar el ratón */
+    }
+
+    .card-tag { 
+        color: #46d369; /* Color verde estilo Netflix */
+        font-weight: bold; 
+        font-size: 0.85rem; 
+        margin-bottom: 4px;
+    }
+
+    .card-meta { font-size: 0.8rem; color: #ccc; }
+
+    /* BLOQUEO */
+    .is-blocked { filter: grayscale(0.8); cursor: not-allowed; }
+    .lock-overlay {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 5;
+    }
+</style>
+
+<div class="full-width-wrapper">
+    <nav class="filter-bar">
+        <div class="nav-tabs">
+            <a href="?type=all" class="nav-tab {% if content_type == 'all' %}active{% endif %}">Inicio</a>
+            <a href="?type=movies" class="nav-tab {% if content_type == 'movies' %}active{% endif %}">Películas</a>
+            <a href="?type=series" class="nav-tab {% if content_type == 'series' %}active{% endif %}">Series</a>
+        </div>
+
+        <form method="GET" class="search-filter-group">
+            <input type="hidden" name="type" value="{{ content_type }}">
+            <input type="text" name="title" placeholder="Títulos..." value="{{ search_query }}" class="search-input">
+            
+            <select name="director" class="genre-select">
+                <option value="">Directores</option>
+                {% for id, name in directors %}
+                    <option value="{{ id }}" {% if selected_director == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="genre" class="genre-select">
+                <option value="">Géneros</option>
+                {% for val, label in genres %}
+                    <option value="{{ val }}" {% if selected_genre == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" style="background:var(--netflix-red); color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Aplicar</button>
+        </form>
+    </nav>
+
+    <main class="rows-container">
+        {% if movies %}
+        <h2 style="margin-bottom:20px;">Películas</h2>
+        <div class="content-grid">
+            {% for movie in movies %}
+            <article class="card-item {% if movie.is_blocked %}is-blocked{% endif %}">
+                {% if movie.is_blocked %}
+                <div class="lock-overlay">
+                    <span style="font-size:1.5rem;">🔒</span>
+                    <span style="background:var(--netflix-red); padding:2px 8px; border-radius:4px; font-size:0.7rem; margin-top:5px;">{{ movie.block_message }}</span>
+                </div>
+                {% endif %}
+
+                <div class="card-placeholder">
+                    <strong>{{ movie.title }}</strong>
+                    <small style="color:var(--netflix-red); font-size:0.7rem;">{{ movie.director_name }}</small>
+                </div>
+
+                <!-- AQUÍ SE MUESTRA EL GÉNERO EN HOVER -->
+                <div class="card-overlay">
+                    <span class="card-tag">
+                        {% if movie.genre_description %}
+                            {{ movie.genre_description }}
+                        {% elif movie.genre.description %}
+                            {{ movie.genre.description }}
+                        {% else %}
+                            Contenido
+                        {% endif %}
+                    </span>
+                    <div class="card-meta">
+                        <span>{{ movie.year }}</span> • <span>⭐ {{ movie.rating }}</span>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if series %}
+        <h2 style="margin-top:40px; margin-bottom:20px;">Series</h2>
+        <div class="content-grid">
+            {% for serie in series %}
+            <article class="card-item {% if serie.is_blocked %}is-blocked{% endif %}">
+                <div class="card-placeholder">
+                    <strong>{{ serie.title }}</strong>
+                </div>
+                <div class="card-overlay">
+                    <span class="card-tag">Serie</span>
+                    <div class="card-meta">
+                        <span>{{ serie.year }}</span> • <span>⭐ {{ serie.rating }}</span>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </main>
+</div>
 {% endblock %}

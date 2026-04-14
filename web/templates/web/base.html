@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ca">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,10 +11,10 @@
 </head>
 <body>
     <header class="app-banner">
-        <img src="{% static 'web/logo.png' %}" alt="Stream Sync Logo" class="app-logo">
+        <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="app-logo">
         <div id="theme-toggle" class="theme-toggle">
             <span id="theme-icon">🌙</span>
-            <span id="theme-text">Mode Nit</span>
+            <span id="theme-text">Modo Noche</span>
         </div>
     </header>
     <main class="container">
@@ -43,7 +43,7 @@
 
         function updateToggleUI(isDark) {
             themeIcon.textContent = isDark ? '☀️' : '🌙';
-            themeText.textContent = isDark ? 'Mode Clar' : 'Mode Nit';
+            themeText.textContent = isDark ? 'Modo Claro' : 'Modo Noche';
         }
     </script>
 </body>

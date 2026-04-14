@@ -1,33 +1,141 @@
 {% extends 'web/base.html' %}
 
 {% block content %}
-    <h2>Register</h2>
-    <form method="post">
+    <div class="register-header" style="text-align: center; margin-bottom: 2.5rem;">
+        <h2 style="font-size: 2.8rem; margin-bottom: 0.5rem; color: var(--text-color);">Crea tu cuenta 🎬</h2>
+        <p style="color: #888; font-size: 1.2rem;">Únete a Stream Sync y unifica todas tus plataformas en un solo lugar</p>
+    </div>
+
+    <form method="post" id="register-form" class="register-form">
         {% csrf_token %}
         {% if error %}
-            <p class="error">{{ error }}</p>
+            <div class="error-banner">
+                <span class="error-icon">⚠️</span>
+                <div class="error-message">
+                    <strong>Atención:</strong> {{ error }}
+                </div>
+            </div>
         {% endif %}
         
-        <h3>Compte</h3>
-        <input type="text" name="user_name" placeholder="Username" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
+        <div class="register-section">
+            <h3><span class="section-icon">👤</span> Datos de Usuario</h3>
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Nombre de usuario</label>
+                    <input type="text" name="user_name" placeholder="Ej: juan_perez" required>
+                </div>
+                <div class="input-group">
+                    <label>Correo electrónico</label>
+                    <input type="email" name="email" placeholder="Ej: juan@ejemplo.com" required>
+                </div>
+                <div class="input-group full-width">
+                    <label>Contraseña</label>
+                    <input type="password" name="password" placeholder="Mínimo 8 caracteres" required>
+                </div>
+            </div>
+        </div>
         
-        <h3>Informació Personal</h3>
-        <input type="text" name="address" placeholder="Adreça" required>
-        <input type="text" name="language" placeholder="Idioma" required>
-        <input type="number" name="age" placeholder="Edat" required>
+        <div class="register-section">
+            <h3><span class="section-icon">📍</span> Información Personal</h3>
+            <div class="form-grid">
+                <div class="input-group full-width">
+                    <label>Dirección</label>
+                    <input type="text" name="address" placeholder="Calle, Número, Ciudad" required>
+                </div>
+                <div class="input-group">
+                    <label>Idioma preferido</label>
+                    <input type="text" name="language" placeholder="Ej: Español, Inglés" required>
+                </div>
+                <div class="input-group">
+                    <label>Edad</label>
+                    <input type="number" name="age" placeholder="Ej: 25" required min="12">
+                </div>
+                <div class="input-group full-width">
+                    <label for="sex">Género</label>
+                    <select name="sex" id="sex" required>
+                        <option value="" disabled selected>Selecciona una opción...</option>
+                        <option value="male">👨 Hombre</option>
+                        <option value="female">👩 Mujer</option>
+                    </select>
+                </div>
+            </div>
+        </div>
         
-        <label for="sex">Sexe:</label>
-        <select name="sex" id="sex" required>
-            <option value="male">Home</option>
-            <option value="female">Dona</option>
-        </select>
+        <div class="register-section">
+            <h3><span class="section-icon">⭐</span> Tus Preferencias</h3>
+            <div class="genre-status">
+                <span class="genre-counter">Géneros seleccionados: <span id="checked-count">0</span> / 5</span>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="genre-progress"></div>
+                </div>
+            </div>
+            <p class="section-hint">Selecciona al menos 5 géneros para personalizar tu feed:</p>
+            
+            <div class="genre-grid">
+                {% for genre_value, genre_label in genres %}
+                    <label class="genre-item" for="genre_{{ forloop.counter }}">
+                        <input type="checkbox" name="genres" value="{{ genre_value }}" id="genre_{{ forloop.counter }}" class="genre-checkbox">
+                        <span class="genre-name">{{ genre_label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            <p id="genre-error" class="error-text" style="display: none;">❌ Debes seleccionar al menos 5 géneros para continuar.</p>
+        </div>
         
-        <h3>Preferències</h3>
-        <textarea name="preferences" placeholder="Explica'ns les teves sèries i gèneres preferits..." rows="4"></textarea>
-        
-        <button type="submit" class="cta-button">Register</button>
+        <div class="form-footer">
+            <button type="submit" class="cta-button submit-btn" id="register-submit">
+                Crear mi cuenta 🚀
+            </button>
+            <p class="login-link">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a></p>
+        </div>
     </form>
-    <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('register-form');
+            const checkboxes = document.querySelectorAll('.genre-checkbox');
+            const genreItems = document.querySelectorAll('.genre-item');
+            const countDisplay = document.getElementById('checked-count');
+            const progressBar = document.getElementById('genre-progress');
+            const errorMsg = document.getElementById('genre-error');
+
+            function updateUI() {
+                const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                countDisplay.textContent = checkedCount;
+                
+                const percentage = Math.min((checkedCount / 5) * 100, 100);
+                progressBar.style.width = percentage + '%';
+                
+                if (checkedCount >= 5) {
+                    progressBar.style.backgroundColor = '#2EAD5C';
+                    errorMsg.style.display = 'none';
+                } else {
+                    progressBar.style.backgroundColor = '#F2C94C';
+                }
+
+                checkboxes.forEach((cb, index) => {
+                    if (cb.checked) {
+                        genreItems[index].classList.add('selected');
+                    } else {
+                        genreItems[index].classList.remove('selected');
+                    }
+                });
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateUI);
+            });
+
+            form.addEventListener('submit', function(event) {
+                const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                if (checkedCount < 5) {
+                    event.preventDefault();
+                    errorMsg.style.display = 'block';
+                    errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            updateUI();
+        });
+    </script>
 {% endblock %}

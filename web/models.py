@@ -8,9 +8,9 @@ class FunctionalUser(models.Model):
     email = models.EmailField(unique=True)
     
     RANK_CHOICES = [
-        ('final-user', 'Final User'),
-        ('sysadmin', 'Sysadmin'),
-        ('finance', 'Finance'),
+        ('final-user', 'Usuario Final'),
+        ('sysadmin', 'Administrador'),
+        ('finance', 'Finanzas'),
     ]
     rank = models.CharField(max_length=20, choices=RANK_CHOICES)
 
@@ -29,14 +29,36 @@ class InfoUser(models.Model):
     age = models.PositiveIntegerField()
 
     SEX_CHOICES = [
-        ('male', 'Male'),
-        ('female', 'Female'),
+        ('male', 'Hombre'),
+        ('female', 'Mujer'),
     ]
     sex = models.CharField(max_length=10, choices=SEX_CHOICES)
 
     # Preferences
-    preferences = models.TextField(blank=True, help_text="Sèries i gèneres preferits")
+    GENRE_CHOICES = [
+        ('Action', '💥 Acción'),
+        ('Comedy', '😂 Comedia'),
+        ('Drama', '🎭 Drama'),
+        ('Horror', '👻 Terror'),
+        ('Sci-Fi', '🚀 Ciencia Ficción'),
+        ('Fantasy', '🧙‍♂️ Fantasía'),
+        ('Romance', '❤️ Romance'),
+        ('Thriller', '🔪 Suspenso'),
+        ('Animation', '🧸 Animación'),
+        ('Documentary', '📹 Documental'),
+        ('Mystery', '🔍 Misterio'),
+        ('Adventure', '🗺️ Aventura'),
+        ('Crime', '🕵️‍♂️ Crimen'),
+        ('Biography', '📚 Biografía'),
+        ('History', '🏛️ Historia'),
+        ('Music', '🎵 Música'),
+        ('Musical', '💃 Musical'),
+        ('War', '🎖️ Guerra'),
+        ('Sport', '⚽ Deporte'),
+        ('Western', '🤠 Oeste'),
+    ]
+    preferences = models.TextField(blank=True, help_text="Géneros cinematográficos seleccionados (mínimo 5)")
 
     def __str__(self):
-        return f"Info for {self.user.user_name}"
+        return f"Información para {self.user.user_name}"
 

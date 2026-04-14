@@ -1,15 +1,40 @@
 {% extends 'web/base.html' %}
 
 {% block content %}
-    <h2>Login</h2>
-    <form method="post">
-        {% csrf_token %}
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        <input type="text" name="user_name" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit" class="cta-button">Login</button>
-    </form>
-    <p>Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+    <div class="login-container-wrapper" style="text-align: center; max-width: 450px; margin: 4rem auto;">
+        <div class="login-header" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 2.8rem; margin-bottom: 0.5rem; color: var(--text-color);">Bienvenido 👋</h2>
+            <p style="color: #888; font-size: 1.1rem;">Inicia sesión para acceder a tu contenido unificado</p>
+        </div>
+
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            {% if error %}
+                <div class="error-banner" style="margin-bottom: 1.5rem;">
+                    <span class="error-icon">⚠️</span>
+                    <div class="error-message">
+                        <strong>Error:</strong> {{ error }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="input-group" style="margin-bottom: 1.5rem; text-align: left;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nombre de usuario</label>
+                <input type="text" name="user_name" placeholder="Tu usuario" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color);">
+            </div>
+            
+            <div class="input-group" style="margin-bottom: 2rem; text-align: left;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña</label>
+                <input type="password" name="password" placeholder="Tu contraseña" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color);">
+            </div>
+            
+            <button type="submit" class="cta-button submit-btn" style="width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; font-weight: 700;">
+                Entrar 🚀
+            </button>
+        </form>
+        
+        <p class="register-link" style="margin-top: 2rem; color: var(--text-color);">
+            ¿No tienes una cuenta? <a href="{% url 'register' %}" style="color: var(--banner-bg); font-weight: bold; text-decoration: none;">Regístrate aquí</a>
+        </p>
+    </div>
 {% endblock %}
