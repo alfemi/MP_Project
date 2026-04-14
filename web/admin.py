@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import identify_hasher, make_password
 from django.utils.html import format_html, format_html_join
 from django.utils.timezone import localtime
 from .models import FunctionalUser, InfoUser, FailedLoginAttempt, MovieImageOverride
-
+from django.utils.safestring import mark_safe
 # ---------------------------------------------------------------------------
 # Personalització del site d'admin
 # ---------------------------------------------------------------------------
@@ -18,7 +18,7 @@ admin.site.index_title = "Panell de control"
 def _genre_badges(preferences_str):
     """Retorna badges HTML per a la cadena de preferències."""
     if not preferences_str:
-        return format_html("<span style='color:#888;'>—</span>")
+        return "—"
     genre_labels = dict(InfoUser.GENRE_CHOICES)
     genres = [genre_labels.get(g.strip(), g.strip()) for g in preferences_str.split(',') if g.strip()]
     return format_html_join(
@@ -44,7 +44,7 @@ class InfoUserInline(admin.StackedInline):
     @admin.display(description="Preferències (vista)")
     def preferences_display(self, obj):
         if obj is None or not isinstance(obj, InfoUser):
-            return format_html("<span style='color:#888;'>—</span>")
+            return "—"
         return _genre_badges(obj.preferences)
 
 
@@ -126,8 +126,8 @@ class FunctionalUserAdmin(admin.ModelAdmin):
     @admin.display(description="Estat", ordering='is_active')
     def status_badge(self, obj):
         if obj.is_active:
-            return format_html('<span style="color:#46d369;font-weight:bold;">● Actiu</span>')
-        return format_html('<span style="color:#e50914;font-weight:bold;">● Bloquejat</span>')
+            return mark_safe('<span style="color:#46d369;font-weight:bold;">● Actiu</span>')
+        return mark_safe('<span style="color:#e50914;font-weight:bold;">● Bloquejat</span>')
 
     @admin.display(description="Últim login", ordering='last_login')
     def last_login_display(self, obj):
@@ -156,7 +156,7 @@ class InfoUserAdmin(admin.ModelAdmin):
     @admin.display(description="Preferències (vista)")
     def preferences_display(self, obj):
         if obj is None:
-            return format_html("<span style='color:#888;'>—</span>")
+            return "—"
         return _genre_badges(obj.preferences)
 
 
@@ -263,7 +263,7 @@ class MovieImageOverrideAdmin(admin.ModelAdmin):
                 '<img src="{}" style="height:40px;border-radius:4px;object-fit:cover;" />',
                 obj.manual_image.url
             )
-        return format_html('<span style="color:#888;">—</span>')
+        return "—"
 
     @admin.display(description="Previsualització")
     def image_preview_large(self, obj):
