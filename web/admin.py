@@ -2,7 +2,16 @@ from django.contrib import admin
 from django.contrib.auth.hashers import identify_hasher, make_password
 from django.utils.html import format_html, format_html_join
 from django.utils.timezone import localtime
-from .models import FunctionalUser, InfoUser, FailedLoginAttempt, MovieImageOverride
+
+from .models import (
+    ApiFailureEvent,
+    ContentInteraction,
+    FavoriteContent,
+    FailedLoginAttempt,
+    FunctionalUser,
+    InfoUser,
+    MovieImageOverride,
+)
 
 # ---------------------------------------------------------------------------
 # Personalització del site d'admin
@@ -76,7 +85,6 @@ class FunctionalUserAdmin(admin.ModelAdmin):
     list_filter = ('rank', 'is_active', 'email_verified', 'date_joined')
     search_fields = ('user_name', 'email')
     ordering = ('-date_joined',)
-    readonly_fields = ('public_id', 'date_joined', 'last_login', 'password')
     actions = [activate_users, deactivate_users]
     inlines = [InfoUserInline]
 
@@ -274,3 +282,123 @@ class MovieImageOverrideAdmin(admin.ModelAdmin):
                 obj.manual_image.url
             )
         return "Cap imatge carregada."
+
+
+@admin.register(ApiFailureEvent)
+class ApiFailureEventAdmin(admin.ModelAdmin):
+    list_display = (
+        'last_seen_display', 'provider_name', 'operation', 'status_code',
+        'severity_badge', 'error_type', 'occurrences', 'is_resolved',
+    )
+    list_filter = (
+        'provider_name',
+        'operation',
+        'severity',
+        'error_type',
+        'status_code',
+        'is_resolved',
+        'timestamp',
+        'last_seen',
+    )
+    search_fields = (
+        'provider_name',
+        'base_url',
+        'operation',
+        'error_type',
+        'error_message',
+        'response_excerpt',
+    )
+    ordering = ('-last_seen', '-timestamp')
+    readonly_fields = (
+        'provider_name',
+        'base_url',
+        'operation',
+        'status_code',
+        'severity',
+        'error_type',
+        'error_message',
+        'response_excerpt',
+        'occurrences',
+        'timestamp',
+        'last_seen',
+    )
+    list_per_page = 50
+    actions = ['mark_as_resolved']
+
+    fieldsets = (
+        ("Origen", {
+            'fields': ('provider_name', 'base_url', 'operation', 'status_code'),
+        }),
+        ("Incidencia", {
+            'fields': ('severity', 'error_type', 'error_message', 'response_excerpt', 'occurrences', 'is_resolved'),
+        }),
+        ("Auditoría", {
+            'fields': ('timestamp', 'last_seen'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    @admin.display(description="Última detección", ordering='last_seen')
+    def last_seen_display(self, obj):
+        return localtime(obj.last_seen).strftime("%d/%m/%Y %H:%M:%S")
+
+    @admin.display(description="Severidad", ordering='severity')
+    def severity_badge(self, obj):
+        colors = {
+            'low': '#46d369',
+            'medium': '#f5a623',
+            'high': '#ff7b00',
+            'critical': '#e50914',
+        }
+        return format_html(
+            '<span style="background:{};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.8em;">{}</span>',
+            colors.get(obj.severity, '#555'),
+            obj.get_severity_display(),
+        )
+
+    @admin.action(description="Marcar incidencias seleccionadas como resueltas")
+    def mark_as_resolved(self, request, queryset):
+        updated = queryset.update(is_resolved=True)
+        self.message_user(request, f"{updated} incidencia(s) marcadas como resueltas.")
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(FavoriteContent)
+class FavoriteContentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'content_type', 'title', 'genre', 'platform_name', 'created_at')
+    list_filter = ('content_type', 'genre', 'platform_name', 'created_at')
+    search_fields = ('user__user_name', 'title', 'content_id', 'platform_name')
+    ordering = ('-created_at',)
+    list_select_related = ('user',)
+
+
+@admin.register(ContentInteraction)
+class ContentInteractionAdmin(admin.ModelAdmin):
+    list_display = (
+        'user',
+        'interaction_type',
+        'content_type',
+        'title',
+        'genre',
+        'platform_name',
+        'timestamp',
+    )
+    list_filter = ('interaction_type', 'content_type', 'genre', 'platform_name', 'timestamp')
+    search_fields = ('user__user_name', 'title', 'content_id', 'genre', 'platform_name')
+    ordering = ('-timestamp',)
+    list_select_related = ('user',)
+    readonly_fields = (
+        'user',
+        'content_type',
+        'content_id',
+        'interaction_type',
+        'title',
+        'genre',
+        'platform_name',
+        'timestamp',
+    )
+
+    def has_add_permission(self, request):
+        return False

@@ -1,12 +1,14 @@
+import requests
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import FailedLoginAttempt, FunctionalUser, InfoUser, MovieImageOverride
+from .models import ApiFailureEvent, ContentInteraction, FavoriteContent, FailedLoginAttempt, FunctionalUser, InfoUser, MovieImageOverride
+from .services import StreamApiService
 
 
 class RegistrationValidationTest(TestCase):
@@ -189,6 +191,7 @@ class MovieImageOverrideIntegrationTest(TestCase):
         self.assertEqual(response.status_code, 200)
         movie = response.context['movies'][0]
         self.assertEqual(movie['image_url'], 'https://example.com/external-image.jpg')
+        self.assertEqual(movie['image_source'], 'external')
 
     def test_home_falls_back_to_placeholder_when_no_image_exists(self):
         with patch('web.views.StreamApiService.get_movies', return_value=[{
@@ -204,6 +207,137 @@ class MovieImageOverrideIntegrationTest(TestCase):
         movie = response.context['movies'][0]
         self.assertEqual(movie['image_url'], '')
         self.assertContains(response, 'No Image')
+        self.assertEqual(movie['image_source'], 'placeholder')
+
+
+class ContentDetailAndFavoritesTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = FunctionalUser.objects.create(
+            user_name='catalog_user',
+            email='catalog@example.com',
+            password=make_password('StrongPassword123!'),
+            rank='final-user',
+        )
+        self.info = InfoUser.objects.create(
+            user=self.user,
+            address='',
+            language='es',
+            age=30,
+            sex='female',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        session = self.client.session
+        session['user_id'] = self.user.id
+        session.save()
+
+    def test_content_detail_renders_fallbacks_and_recommendations(self):
+        with patch('web.views.StreamApiService.get_content_detail', return_value={
+            'id': 12,
+            'title': 'Arrival',
+            'genre_id': 'Action',
+            'director_id': 1,
+            'age_rating_id': 3,
+            'platform_name': 'Netflix',
+        }), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]), patch('web.views.StreamApiService.get_movies', return_value=[
+            {'id': 99, 'title': 'Interstellar', 'genre_id': 'Action', 'director_id': 1, 'rating': 9.2, 'age_rating_id': 3}
+        ]):
+            response = self.client.get(reverse('content_detail', args=['movie', '12']))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Arrival')
+        self.assertContains(response, 'Sin sinopsis disponible.')
+        self.assertContains(response, 'Interstellar')
+        self.assertEqual(ContentInteraction.objects.filter(interaction_type='view').count(), 1)
+
+    def test_toggle_favorite_creates_and_removes_favorite(self):
+        create_payload = {
+            'title': 'Arrival',
+            'genre': 'Acción',
+            'platform_name': 'Netflix',
+            'platform_url': '',
+            'image_url': 'https://example.com/poster.jpg',
+            'next': reverse('favorites'),
+        }
+        response = self.client.post(reverse('toggle_favorite', args=['movie', '12']), create_payload)
+        self.assertRedirects(response, reverse('favorites'))
+        self.assertEqual(FavoriteContent.objects.count(), 1)
+        self.assertEqual(ContentInteraction.objects.filter(interaction_type='favorite_add').count(), 1)
+
+        response = self.client.post(reverse('toggle_favorite', args=['movie', '12']), {'next': reverse('favorites')})
+        self.assertRedirects(response, reverse('favorites'))
+        self.assertEqual(FavoriteContent.objects.count(), 0)
+        self.assertEqual(ContentInteraction.objects.filter(interaction_type='favorite_remove').count(), 1)
+
+    def test_favorites_page_loads(self):
+        FavoriteContent.objects.create(
+            user=self.user,
+            content_type='movie',
+            content_id='12',
+            title='Arrival',
+            genre='Acción',
+            platform_name='Netflix',
+        )
+        response = self.client.get(reverse('favorites'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Arrival')
+
+
+class ApiFailureObservabilityTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = FunctionalUser.objects.create(
+            user_name='apiwatcher',
+            email='apiwatcher@example.com',
+            password=make_password('StrongPassword123!'),
+            rank='final-user',
+        )
+        InfoUser.objects.create(
+            user=self.user,
+            address='',
+            language='es',
+            age=30,
+            sex='male',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        session = self.client.session
+        session['user_id'] = self.user.id
+        session.save()
+
+    def test_api_timeout_is_logged(self):
+        with patch('web.services.requests.get', side_effect=requests.exceptions.Timeout('timed out')):
+            data = StreamApiService.get_movies()
+
+        self.assertEqual(data, [])
+        self.assertEqual(ApiFailureEvent.objects.count(), 3)
+        event = ApiFailureEvent.objects.order_by('provider_name').first()
+        self.assertEqual(event.operation, 'movies')
+        self.assertEqual(event.error_type, 'timeout')
+        self.assertEqual(event.severity, 'high')
+        self.assertEqual(event.occurrences, 1)
+        self.assertFalse(event.is_resolved)
+
+    def test_http_error_is_logged(self):
+        mock_response = Mock(status_code=503, text='Service unavailable')
+        with patch('web.services.requests.get', return_value=mock_response):
+            data = StreamApiService.get_genres()
+
+        self.assertEqual(data, [])
+        self.assertEqual(ApiFailureEvent.objects.count(), 3)
+        event = ApiFailureEvent.objects.order_by('provider_name').first()
+        self.assertEqual(event.status_code, 503)
+        self.assertEqual(event.error_type, 'http_error')
+        self.assertEqual(event.severity, 'critical')
+        self.assertIn('Service unavailable', event.response_excerpt)
+
+    def test_home_degrades_gracefully_when_apis_fail(self):
+        with patch('web.services.requests.get', side_effect=requests.exceptions.ConnectionError('down')):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['movies'], [])
+        self.assertEqual(response.context['series'], [])
+        self.assertGreaterEqual(ApiFailureEvent.objects.count(), 1)
 
 
 class AdminSmokeTest(TestCase):
@@ -241,6 +375,33 @@ class AdminSmokeTest(TestCase):
             title='Admin Preview Movie',
             manual_image=SimpleUploadedFile('admin-poster.jpg', b'fake-image-content', content_type='image/jpeg'),
         )
+        self.api_failure_event = ApiFailureEvent.objects.create(
+            provider_name='localhost:8080',
+            base_url='http://localhost:8080',
+            operation='movies',
+            status_code=503,
+            severity='critical',
+            error_type='http_error',
+            error_message='HTTP 503 returned by provider.',
+            response_excerpt='Service unavailable',
+        )
+        self.favorite = FavoriteContent.objects.create(
+            user=self.functional_user,
+            content_type='movie',
+            content_id='11',
+            title='Saved movie',
+            genre='Action',
+            platform_name='Netflix',
+        )
+        self.interaction = ContentInteraction.objects.create(
+            user=self.functional_user,
+            content_type='movie',
+            content_id='11',
+            interaction_type='view',
+            title='Saved movie',
+            genre='Action',
+            platform_name='Netflix',
+        )
 
     def test_admin_changelists_load(self):
         urls = [
@@ -248,6 +409,9 @@ class AdminSmokeTest(TestCase):
             reverse('admin:web_infouser_changelist'),
             reverse('admin:web_failedloginattempt_changelist'),
             reverse('admin:web_movieimageoverride_changelist'),
+            reverse('admin:web_apifailureevent_changelist'),
+            reverse('admin:web_favoritecontent_changelist'),
+            reverse('admin:web_contentinteraction_changelist'),
         ]
         for url in urls:
             response = self.client.get(url)
@@ -259,7 +423,70 @@ class AdminSmokeTest(TestCase):
             (self.info_user, 'admin:web_infouser_change'),
             (self.failed_attempt, 'admin:web_failedloginattempt_change'),
             (self.movie_override, 'admin:web_movieimageoverride_change'),
+            (self.api_failure_event, 'admin:web_apifailureevent_change'),
+            (self.favorite, 'admin:web_favoritecontent_change'),
+            (self.interaction, 'admin:web_contentinteraction_change'),
         ]
         for obj, url_name in objects_and_urls:
             response = self.client.get(reverse(url_name, args=[obj.pk]))
             self.assertEqual(response.status_code, 200, msg=f'Admin change view failed: {url_name}')
+
+
+class DashboardAndExportTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = FunctionalUser.objects.create(
+            user_name='ops_user',
+            email='ops@example.com',
+            password=make_password('StrongPassword123!'),
+            rank='sysadmin',
+        )
+        InfoUser.objects.create(
+            user=self.user,
+            address='',
+            language='ca',
+            age=34,
+            sex='male',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        session = self.client.session
+        session['user_id'] = self.user.id
+        session.save()
+        FavoriteContent.objects.create(
+            user=self.user,
+            content_type='movie',
+            content_id='1',
+            title='Arrival',
+            genre='Action',
+            platform_name='Netflix',
+        )
+        ContentInteraction.objects.create(
+            user=self.user,
+            content_type='movie',
+            content_id='1',
+            interaction_type='view',
+            title='Arrival',
+            genre='Action',
+            platform_name='Netflix',
+        )
+        ApiFailureEvent.objects.create(
+            provider_name='localhost:8080',
+            base_url='http://localhost:8080',
+            operation='movies',
+            status_code=503,
+            severity='critical',
+            error_type='http_error',
+            error_message='HTTP 503',
+        )
+
+    def test_dashboard_loads_for_internal_user(self):
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dashboard operativo y negocio')
+        self.assertContains(response, 'Netflix')
+
+    def test_dashboard_csv_export_works(self):
+        response = self.client.get(reverse('dashboard_export_csv', args=['favorites']))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('Arrival', response.content.decode())

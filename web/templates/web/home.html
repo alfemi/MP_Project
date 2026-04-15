@@ -162,6 +162,11 @@
     </nav>
 
     <main class="rows-container">
+        {% if api_partial %}
+        <div class="error-banner" style="margin-bottom:1.5rem;">
+            <div class="error-message"><strong>Modo degradado:</strong> una o más APIs externas están fallando y los resultados pueden ser parciales.</div>
+        </div>
+        {% endif %}
         {% if movies %}
         <h2 style="margin-bottom:20px;">Películas</h2>
         <div class="content-grid">
@@ -196,6 +201,9 @@
                     </span>
                     <div class="card-meta">
                         <span>{{ movie.year }}</span> • <span>⭐ {{ movie.rating }}</span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="{% url 'content_detail' 'movie' movie.content_id %}" class="cta-button" style="padding:8px 12px; font-size:0.85rem; text-decoration:none;">Ver ficha</a>
                     </div>
                 </div>
             </article>
@@ -232,6 +240,9 @@
                     </span>
                     <div class="card-meta">
                         <span>{{ serie.year }}</span> • <span>⭐ {{ serie.rating }}</span>
+                    </div>
+                    <div class="card-actions">
+                        <a href="{% url 'content_detail' 'series' serie.content_id %}" class="cta-button" style="padding:8px 12px; font-size:0.85rem; text-decoration:none;">Ver ficha</a>
                     </div>
                 </div>
             </article>

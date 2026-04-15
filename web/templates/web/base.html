@@ -11,7 +11,20 @@
 </head>
 <body>
     <header class="app-banner">
-        <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="app-logo">
+        <a href="{% url 'home' %}" class="brand-link">
+            <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="app-logo">
+        </a>
+        {% if request.session.user_id %}
+        <nav class="app-nav">
+            <a href="{% url 'home' %}">Catálogo</a>
+            <a href="{% url 'favorites' %}">Favoritos</a>
+            {% if request.user.is_superuser %}
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            {% elif user and user.rank == 'sysadmin' %}
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            {% endif %}
+        </nav>
+        {% endif %}
         <div id="theme-toggle" class="theme-toggle">
             <span id="theme-icon">🌙</span>
             <span id="theme-text">Modo Noche</span>

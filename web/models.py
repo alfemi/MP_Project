@@ -220,3 +220,140 @@ class MovieImageOverride(models.Model):
         verbose_name = "Override d'imatge de pel·lícula"
         verbose_name_plural = "Overrides d'imatge de pel·lícules"
         ordering = ['-updated_at']
+
+
+class ApiFailureEvent(models.Model):
+    MAX_RESPONSE_EXCERPT_LENGTH = 500
+    SEVERITY_CHOICES = [
+        ('low', 'Baja'),
+        ('medium', 'Media'),
+        ('high', 'Alta'),
+        ('critical', 'Crítica'),
+    ]
+
+    provider_name = models.CharField(max_length=100, db_index=True)
+    base_url = models.URLField(max_length=255, blank=True)
+    operation = models.CharField(max_length=100, db_index=True)
+    status_code = models.PositiveIntegerField(null=True, blank=True)
+    error_type = models.CharField(max_length=100, db_index=True)
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='medium', db_index=True)
+    error_message = models.TextField(blank=True)
+    response_excerpt = models.TextField(blank=True)
+    occurrences = models.PositiveIntegerField(default=1)
+    is_resolved = models.BooleanField(default=False, db_index=True)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+    last_seen = models.DateTimeField(default=timezone.now)
+
+    @classmethod
+    def record_failure(
+        cls,
+        *,
+        provider_name,
+        base_url,
+        operation,
+        status_code=None,
+        error_type,
+        severity='medium',
+        error_message="",
+        response_excerpt="",
+    ):
+        normalized_message = (error_message or "").strip()
+        normalized_excerpt = (response_excerpt or "").strip()[: cls.MAX_RESPONSE_EXCERPT_LENGTH]
+        now = timezone.now()
+        event = cls.objects.filter(
+            provider_name=provider_name,
+            base_url=base_url,
+            operation=operation,
+            status_code=status_code,
+            error_type=error_type,
+            severity=severity,
+            error_message=normalized_message,
+            is_resolved=False,
+        ).order_by('-last_seen').first()
+        if event:
+            event.occurrences += 1
+            event.last_seen = now
+            update_fields = ['occurrences', 'last_seen']
+            if normalized_excerpt and normalized_excerpt != event.response_excerpt:
+                event.response_excerpt = normalized_excerpt
+                update_fields.append('response_excerpt')
+            event.save(update_fields=update_fields)
+            return event
+
+        return cls.objects.create(
+            provider_name=provider_name,
+            base_url=base_url,
+            operation=operation,
+            status_code=status_code,
+            error_type=error_type,
+            severity=severity,
+            error_message=normalized_message,
+            response_excerpt=normalized_excerpt,
+            timestamp=now,
+            last_seen=now,
+        )
+
+    def __str__(self):
+        return f"[{self.provider_name}] {self.operation} - {self.error_type}"
+
+    class Meta:
+        verbose_name = "Incidencia de API"
+        verbose_name_plural = "Incidencias de APIs"
+        ordering = ['-last_seen', '-timestamp']
+
+
+class FavoriteContent(models.Model):
+    CONTENT_TYPE_CHOICES = [
+        ('movie', 'Película'),
+        ('series', 'Serie'),
+    ]
+
+    user = models.ForeignKey(FunctionalUser, on_delete=models.CASCADE, related_name='favorites')
+    content_type = models.CharField(max_length=10, choices=CONTENT_TYPE_CHOICES, db_index=True)
+    content_id = models.CharField(max_length=50, db_index=True)
+    title = models.CharField(max_length=255)
+    genre = models.CharField(max_length=100, blank=True)
+    platform_name = models.CharField(max_length=150, blank=True)
+    platform_url = models.URLField(blank=True)
+    content_image_url = models.CharField(blank=True, max_length=500)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    def __str__(self):
+        return f"{self.user.user_name} -> {self.title}"
+
+    class Meta:
+        verbose_name = "Favorito"
+        verbose_name_plural = "Favoritos"
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'content_type', 'content_id'],
+                name='favoritecontent_unique_per_user_content',
+            ),
+        ]
+
+
+class ContentInteraction(models.Model):
+    INTERACTION_TYPE_CHOICES = [
+        ('view', 'Visualización'),
+        ('favorite_add', 'Añadir a favoritos'),
+        ('favorite_remove', 'Quitar de favoritos'),
+    ]
+    CONTENT_TYPE_CHOICES = FavoriteContent.CONTENT_TYPE_CHOICES
+
+    user = models.ForeignKey(FunctionalUser, on_delete=models.CASCADE, related_name='content_interactions')
+    content_type = models.CharField(max_length=10, choices=CONTENT_TYPE_CHOICES, db_index=True)
+    content_id = models.CharField(max_length=50, db_index=True)
+    interaction_type = models.CharField(max_length=20, choices=INTERACTION_TYPE_CHOICES, db_index=True)
+    title = models.CharField(max_length=255, blank=True)
+    genre = models.CharField(max_length=100, blank=True, db_index=True)
+    platform_name = models.CharField(max_length=150, blank=True, db_index=True)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
+
+    def __str__(self):
+        return f"{self.user.user_name} {self.interaction_type} {self.content_type}:{self.content_id}"
+
+    class Meta:
+        verbose_name = "Interacción de contenido"
+        verbose_name_plural = "Interacciones de contenido"
+        ordering = ['-timestamp']

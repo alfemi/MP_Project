@@ -1,0 +1,31 @@
+{% extends 'web/base.html' %}
+
+{% block content %}
+<section class="page-shell">
+    <h1 class="section-title">Mis favoritos</h1>
+    <p>Lista personal mínima para guardar contenido relevante sin perder trazabilidad.</p>
+
+    {% if favorites %}
+    <div class="favorites-grid" style="margin-top:1rem;">
+        {% for favorite in favorites %}
+        <article class="mini-card">
+            <span class="accent-chip">{{ favorite.content_type|title }}</span>
+            <h2 style="margin:0.8rem 0 0.4rem;">{{ favorite.title }}</h2>
+            <p style="margin:0 0 0.4rem;">{{ favorite.genre|default:"General" }}</p>
+            <p style="margin:0 0 1rem; color:#666;">{{ favorite.platform_name|default:"Plataforma pendiente" }}</p>
+            <div class="card-actions">
+                <a href="{% url 'content_detail' favorite.content_type favorite.content_id %}" class="cta-button" style="padding:8px 12px; text-decoration:none;">Ver ficha</a>
+                <form method="post" action="{% url 'toggle_favorite' favorite.content_type favorite.content_id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'favorites' %}">
+                    <button type="submit" class="cta-button secondary">Quitar</button>
+                </form>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="margin-top:1rem;">Todavía no has guardado ningún favorito.</p>
+    {% endif %}
+</section>
+{% endblock %}

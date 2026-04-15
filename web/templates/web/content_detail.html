@@ -1,0 +1,88 @@
+{% extends 'web/base.html' %}
+
+{% block content %}
+{% if not content %}
+<section class="page-shell">
+    <h1 class="section-title">Contenido no disponible</h1>
+    <p>No hemos podido encontrar esta ficha en las APIs externas en este momento.</p>
+    <a href="{% url 'home' %}" class="cta-button">Volver al catálogo</a>
+</section>
+{% else %}
+<section class="page-shell">
+    {% if api_partial %}
+    <div class="error-banner" style="margin-bottom:1rem;">
+        <div class="error-message"><strong>Modo degradado:</strong> parte de la información puede estar incompleta por incidencias en APIs externas.</div>
+    </div>
+    {% endif %}
+    <div class="responsive-grid">
+        <div style="grid-column: span 4;">
+            {% if content.image_url %}
+                <img src="{{ content.image_url }}" alt="{{ content.title }}" class="detail-poster">
+            {% else %}
+                <div class="detail-poster" style="display:flex; align-items:center; justify-content:center; color:#fff; text-align:center; padding:2rem;">
+                    <strong>{{ content.title }}</strong>
+                </div>
+            {% endif %}
+        </div>
+        <div style="grid-column: span 8;">
+            <span class="accent-chip">{{ content.content_type|title }}</span>
+            <h1 class="section-title" style="margin-top:0.8rem;">{{ content.title }}</h1>
+            <p>{{ content.synopsis }}</p>
+
+            <div class="meta-list">
+                <div class="meta-row"><span class="meta-label">Género</span><span>{{ content.genre_description|default:"General" }}</span></div>
+                <div class="meta-row"><span class="meta-label">Director</span><span>{{ content.director_name|default:"No disponible" }}</span></div>
+                <div class="meta-row"><span class="meta-label">Clasificación</span><span>{{ content.age_rating_label }}</span></div>
+                <div class="meta-row"><span class="meta-label">Plataforma</span><span>{{ content.platform_name|default:"Pendiente de proveedor" }}</span></div>
+                <div class="meta-row"><span class="meta-label">Imagen</span><span>{{ content.image_source|title }}</span></div>
+            </div>
+
+            {% if content.is_blocked %}
+                <p class="error-banner"><strong>Acceso restringido:</strong> {{ content.block_message }}</p>
+            {% endif %}
+
+            <div class="card-actions">
+                {% if content.platform_url %}
+                    <a href="{{ content.platform_url }}" target="_blank" rel="noopener noreferrer" class="cta-button">Ir a la plataforma</a>
+                {% else %}
+                    <span class="cta-button ghost">Disponible en {{ content.platform_name|default:"plataforma externa" }}</span>
+                {% endif %}
+
+                <form method="post" action="{% url 'toggle_favorite' content.content_type content.content_id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="title" value="{{ content.title }}">
+                    <input type="hidden" name="genre" value="{{ content.genre_description }}">
+                    <input type="hidden" name="platform_name" value="{{ content.platform_name }}">
+                    <input type="hidden" name="platform_url" value="{{ content.platform_url }}">
+                    <input type="hidden" name="image_url" value="{{ content.image_url }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="cta-button secondary">
+                        {% if content.is_favorite %}Quitar de favoritos{% else %}Guardar en favoritos{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="page-shell">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <h2 class="section-title" style="font-size:1.5rem; margin:0;">Recomendaciones simples</h2>
+        <span class="accent-chip">Basadas en género y preferencia</span>
+    </div>
+    {% if content.recommendations %}
+    <div class="recommendation-grid" style="margin-top:1rem;">
+        {% for item in content.recommendations %}
+        <article class="mini-card">
+            <strong>{{ item.title }}</strong>
+            <p style="margin:0.4rem 0 0.8rem;">{{ item.genre_description }}</p>
+            <a href="{% url 'content_detail' item.content_type item.content_id %}" class="cta-button" style="padding:8px 12px; font-size:0.85rem; text-decoration:none;">Abrir ficha</a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="margin-top:1rem;">Todavía no hay recomendaciones suficientes para este contenido.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
