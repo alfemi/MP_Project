@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import identify_hasher, make_password
 from django.utils.html import format_html, format_html_join
 from django.utils.timezone import localtime
 from .models import FunctionalUser, InfoUser, FailedLoginAttempt, MovieImageOverride
-from django.utils.safestring import mark_safe
+
 # ---------------------------------------------------------------------------
 # Personalització del site d'admin
 # ---------------------------------------------------------------------------
@@ -126,8 +126,8 @@ class FunctionalUserAdmin(admin.ModelAdmin):
     @admin.display(description="Estat", ordering='is_active')
     def status_badge(self, obj):
         if obj.is_active:
-            return mark_safe('<span style="color:#46d369;font-weight:bold;">● Actiu</span>')
-        return mark_safe('<span style="color:#e50914;font-weight:bold;">● Bloquejat</span>')
+            return format_html('<span style="color:{};font-weight:bold;">{}</span>', '#46d369', '● Actiu')
+        return format_html('<span style="color:{};font-weight:bold;">{}</span>', '#e50914', '● Bloquejat')
 
     @admin.display(description="Últim login", ordering='last_login')
     def last_login_display(self, obj):
