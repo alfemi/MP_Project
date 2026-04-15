@@ -5,6 +5,8 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 from django.shortcuts import render, redirect
 
@@ -101,6 +103,8 @@ def root_redirect(request):
 
 # --- VISTES D'USUARI ---
 
+@never_cache
+@ensure_csrf_cookie
 def register(request):
     if request.method == 'POST':
         user_name = normalize_user_name(request.POST.get('user_name'))
@@ -202,6 +206,8 @@ def register(request):
     return render(request, 'web/register.html', _register_context())
 
 
+@never_cache
+@ensure_csrf_cookie
 def login_view(request):
     if request.method == 'POST':
         user_name = normalize_user_name(request.POST.get('user_name', ''))

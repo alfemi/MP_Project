@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
 from django.contrib.auth.hashers import check_password, make_password
@@ -68,6 +69,14 @@ class RegistrationValidationTest(TestCase):
         self.assertContains(response, 'Selecciona un idioma válido.')
         self.assertFalse(FunctionalUser.objects.filter(user_name='badlanguage').exists())
 
+    def test_register_form_sets_csrf_cookie_and_is_not_cacheable(self):
+        response = self.client.get(self.register_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'csrfmiddlewaretoken')
+        self.assertIn('csrftoken', response.cookies)
+        self.assertIn('no-cache', response.headers.get('Cache-Control', ''))
+
 
 class LoginSecurityTest(TestCase):
     def setUp(self):
@@ -111,6 +120,14 @@ class LoginSecurityTest(TestCase):
         self.assertEqual(response.url, reverse('home'))
         self.user.refresh_from_db()
         self.assertIsNotNone(self.user.last_login)
+
+    def test_login_form_sets_csrf_cookie_and_is_not_cacheable(self):
+        response = self.client.get(self.login_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'csrfmiddlewaretoken')
+        self.assertIn('csrftoken', response.cookies)
+        self.assertIn('no-cache', response.headers.get('Cache-Control', ''))
 
 
 class MovieImageOverrideIntegrationTest(TestCase):
@@ -157,3 +174,92 @@ class MovieImageOverrideIntegrationTest(TestCase):
         self.assertEqual(response.status_code, 200)
         movie = response.context['movies'][0]
         self.assertIn('/media/movie_overrides/', movie['image_url'])
+
+    def test_home_uses_external_image_when_no_manual_override_exists(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[{
+            'id': 77,
+            'title': 'External Only',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+            'image_url': 'https://example.com/external-image.jpg',
+        }]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        movie = response.context['movies'][0]
+        self.assertEqual(movie['image_url'], 'https://example.com/external-image.jpg')
+
+    def test_home_falls_back_to_placeholder_when_no_image_exists(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[{
+            'id': 88,
+            'title': 'No Image',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+        }]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        movie = response.context['movies'][0]
+        self.assertEqual(movie['image_url'], '')
+        self.assertContains(response, 'No Image')
+
+
+class AdminSmokeTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = get_user_model().objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='AdminPassword123!',
+        )
+        self.client.force_login(self.admin_user)
+
+        self.functional_user = FunctionalUser.objects.create(
+            user_name='admin_target',
+            email='target@example.com',
+            password=make_password('StrongPassword123!'),
+            rank='final-user',
+        )
+        self.info_user = InfoUser.objects.create(
+            user=self.functional_user,
+            address='Demo street',
+            language='es',
+            age=29,
+            sex='male',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        self.failed_attempt = FailedLoginAttempt.objects.create(
+            user_name_attempted='admin_target',
+            ip_address='127.0.0.1',
+            user_agent='test-agent',
+            reason='wrong_password',
+        )
+        self.movie_override = MovieImageOverride.objects.create(
+            movie_id='999',
+            title='Admin Preview Movie',
+            manual_image=SimpleUploadedFile('admin-poster.jpg', b'fake-image-content', content_type='image/jpeg'),
+        )
+
+    def test_admin_changelists_load(self):
+        urls = [
+            reverse('admin:web_functionaluser_changelist'),
+            reverse('admin:web_infouser_changelist'),
+            reverse('admin:web_failedloginattempt_changelist'),
+            reverse('admin:web_movieimageoverride_changelist'),
+        ]
+        for url in urls:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200, msg=f'Admin changelist failed: {url}')
+
+    def test_admin_change_views_load(self):
+        objects_and_urls = [
+            (self.functional_user, 'admin:web_functionaluser_change'),
+            (self.info_user, 'admin:web_infouser_change'),
+            (self.failed_attempt, 'admin:web_failedloginattempt_change'),
+            (self.movie_override, 'admin:web_movieimageoverride_change'),
+        ]
+        for obj, url_name in objects_and_urls:
+            response = self.client.get(reverse(url_name, args=[obj.pk]))
+            self.assertEqual(response.status_code, 200, msg=f'Admin change view failed: {url_name}')
