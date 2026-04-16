@@ -207,3 +207,49 @@ def home(request):
 
     except (FunctionalUser.DoesNotExist, InfoUser.DoesNotExist):
         return redirect('login')
+
+def profile(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return redirect('login')
+
+    try:
+        user = FunctionalUser.objects.get(id=user_id)
+        info = InfoUser.objects.get(user=user)
+        
+        if request.method == 'POST':
+            action = request.POST.get('action')
+            
+            if action == 'update_info':
+                user.email = request.POST.get('email', user.email)
+                info.address = request.POST.get('address', info.address)
+                info.language = request.POST.get('language', info.language)
+                info.age = request.POST.get('age', info.age)
+                info.sex = request.POST.get('sex', info.sex)
+                
+                user.save()
+                info.save()
+                return render(request, 'web/profile.html', {'user': user, 'info': info, 'success': 'Información actualizada correctamente.'})
+            
+            elif action == 'change_password':
+                old_password = request.POST.get('old_password')
+                new_password = request.POST.get('new_password')
+                confirm_password = request.POST.get('confirm_password')
+                
+                if not check_password(old_password, user.password):
+                    return render(request, 'web/profile.html', {'user': user, 'info': info, 'error': 'La contraseña actual es incorrecta.'})
+                
+                if new_password != confirm_password:
+                    return render(request, 'web/profile.html', {'user': user, 'info': info, 'error': 'Las nuevas contraseñas no coinciden.'})
+                
+                user.password = make_password(new_password)
+                user.save()
+                return render(request, 'web/profile.html', {'user': user, 'info': info, 'success': 'Contraseña cambiada correctamente.'})
+
+        return render(request, 'web/profile.html', {'user': user, 'info': info})
+    except (FunctionalUser.DoesNotExist, InfoUser.DoesNotExist):
+        return redirect('login')
+
+def logout_view(request):
+    request.session.flush()
+    return redirect('login')

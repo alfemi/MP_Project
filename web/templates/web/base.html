@@ -11,10 +11,19 @@
 </head>
 <body>
     <header class="app-banner">
-        <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="app-logo">
-        <div id="theme-toggle" class="theme-toggle">
-            <span id="theme-icon">🌙</span>
-            <span id="theme-text">Modo Noche</span>
+        <a href="{% url 'home' %}" style="text-decoration: none;">
+            <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="app-logo">
+        </a>
+        <div class="banner-controls">
+            <div id="theme-toggle" class="theme-toggle">
+                <span id="theme-icon">🌙</span>
+                <span id="theme-text">Modo Noche</span>
+            </div>
+            {% if request.session.user_id %}
+            <a href="{% url 'profile' %}" class="profile-icon-link">
+                <span class="profile-icon">👤</span>
+            </a>
+            {% endif %}
         </div>
     </header>
     <main class="container">

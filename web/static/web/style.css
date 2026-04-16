@@ -52,6 +52,35 @@ body {
     z-index: 1000;
 }
 
+.banner-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.profile-icon-link {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.profile-icon-link:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: #fff;
+    transform: scale(1.1);
+}
+
+.profile-icon {
+    font-size: 1.5rem;
+}
+
 .app-logo {
     height: 60px;
     width: auto;
