@@ -1,0 +1,65 @@
+{% extends 'web/base.html' %}
+
+{% block body_class %}app-surface favorites-page{% endblock %}
+{% block main_class %}container-wide{% endblock %}
+
+{% block content %}
+<section class="favorites-hero">
+    <div>
+        <span class="eyebrow">Colección personal</span>
+        <h1 class="section-title">Mis favoritos</h1>
+        <p class="section-description">
+            Guarda contenido relevante, vuelve a él rápidamente y mantén una lista
+            personal mucho más usable que una tabla técnica.
+        </p>
+    </div>
+    <a href="{% url 'home' %}" class="text-button">Seguir explorando</a>
+</section>
+
+{% if favorites %}
+<section class="favorites-shell">
+    <div class="favorites-grid">
+        {% for favorite in favorites %}
+        <article class="favorite-card">
+            <div class="favorite-card-media">
+                {% if favorite.content_image_url %}
+                <img src="{{ favorite.content_image_url }}" alt="{{ favorite.title }}" class="card-image">
+                {% else %}
+                <div class="card-placeholder card-placeholder--compact">
+                    <span class="placeholder-badge">No Image</span>
+                    <strong>{{ favorite.title }}</strong>
+                </div>
+                {% endif %}
+                <span class="floating-badge">{{ favorite.content_type|title }}</span>
+            </div>
+            <div class="favorite-card-body">
+                <h2 class="content-card-title">{{ favorite.title }}</h2>
+                <p class="content-card-meta">
+                    <span>{{ favorite.genre|default:"General" }}</span>
+                    <span>•</span>
+                    <span>{{ favorite.platform_name|default:"Plataforma pendiente" }}</span>
+                </p>
+                <div class="content-card-actions">
+                    <a href="{% url 'content_detail' favorite.content_type favorite.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
+                    <form method="post" action="{% url 'toggle_favorite' favorite.content_type favorite.content_id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'favorites' %}">
+                        <button type="submit" class="cta-button secondary cta-button--small">Quitar</button>
+                    </form>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% else %}
+<section class="favorites-shell">
+    <div class="empty-state">
+        <div class="empty-state-icon">💛</div>
+        <h3>Todavía no has guardado ningún favorito</h3>
+        <p>Empieza a construir tu lista desde el catálogo y vuelve aquí cuando quieras retomarla.</p>
+        <a href="{% url 'home' %}" class="cta-button">Ir al catálogo</a>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -22,11 +22,11 @@
             <div class="form-grid">
                 <div class="input-group">
                     <label>Nombre de usuario</label>
-                    <input type="text" name="user_name" placeholder="Ej: juan_perez" required>
+                    <input type="text" name="user_name" placeholder="Ej: juan_perez" required value="{{ form_data.user_name|default:'' }}">
                 </div>
                 <div class="input-group">
                     <label>Correo electrónico</label>
-                    <input type="email" name="email" placeholder="Ej: juan@ejemplo.com" required>
+                    <input type="email" name="email" placeholder="Ej: juan@ejemplo.com" required value="{{ form_data.email|default:'' }}">
                 </div>
                 <div class="input-group full-width">
                     <label>Contraseña</label>
@@ -39,23 +39,29 @@
             <h3><span class="section-icon">📍</span> Información Personal</h3>
             <div class="form-grid">
                 <div class="input-group full-width">
-                    <label>Dirección</label>
-                    <input type="text" name="address" placeholder="Calle, Número, Ciudad" required>
+                    <label>Dirección <small>(opcional)</small></label>
+                    <input type="text" name="address" placeholder="Calle, Número, Ciudad" value="{{ form_data.address|default:'' }}">
                 </div>
                 <div class="input-group">
                     <label>Idioma preferido</label>
-                    <input type="text" name="language" placeholder="Ej: Español, Inglés" required>
+                    <select name="language" required>
+                        <option value="" disabled {% if not form_data.language %}selected{% endif %}>Selecciona un idioma...</option>
+                        {% for language_value, language_label in languages %}
+                            <option value="{{ language_value }}" {% if form_data.language == language_value %}selected{% endif %}>{{ language_label }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="input-group">
                     <label>Edad</label>
-                    <input type="number" name="age" placeholder="Ej: 25" required min="12">
+                    <input type="number" name="age" placeholder="Ej: 25" required min="13" max="120" value="{{ form_data.age|default:'' }}">
                 </div>
                 <div class="input-group full-width">
                     <label for="sex">Género</label>
                     <select name="sex" id="sex" required>
-                        <option value="" disabled selected>Selecciona una opción...</option>
-                        <option value="male">👨 Hombre</option>
-                        <option value="female">👩 Mujer</option>
+                        <option value="" disabled {% if not form_data.sex %}selected{% endif %}>Selecciona una opción...</option>
+                        {% for sex_value, sex_label in sex_choices %}
+                            <option value="{{ sex_value }}" {% if form_data.sex == sex_value %}selected{% endif %}>{{ sex_label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -74,7 +80,7 @@
             <div class="genre-grid">
                 {% for genre_value, genre_label in genres %}
                     <label class="genre-item" for="genre_{{ forloop.counter }}">
-                        <input type="checkbox" name="genres" value="{{ genre_value }}" id="genre_{{ forloop.counter }}" class="genre-checkbox">
+                        <input type="checkbox" name="genres" value="{{ genre_value }}" id="genre_{{ forloop.counter }}" class="genre-checkbox" {% if genre_value in form_data.genres %}checked{% endif %}>
                         <span class="genre-name">{{ genre_label }}</span>
                     </label>
                 {% endfor %}

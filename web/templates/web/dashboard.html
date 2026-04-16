@@ -1,0 +1,89 @@
+{% extends 'web/base.html' %}
+
+{% block content %}
+<section class="page-shell">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+            <h1 class="section-title">Dashboard operativo y negocio</h1>
+            <p>Vista mínima para dirección y equipo técnico con exportación y estado del servicio.</p>
+        </div>
+        <span class="status-{{ service_status.0 }}">{{ service_status.1 }}</span>
+    </div>
+
+    <div class="card-actions" style="margin-bottom:1rem;">
+        <a href="?window=7d" class="cta-button {% if window == '7d' %}secondary{% endif %}" style="text-decoration:none;">Últimos 7 días</a>
+        <a href="?window=30d" class="cta-button {% if window == '30d' %}secondary{% endif %}" style="text-decoration:none;">Últimos 30 días</a>
+        <a href="?window=total" class="cta-button {% if window == 'total' %}secondary{% endif %}" style="text-decoration:none;">Total</a>
+    </div>
+
+    <div class="kpi-grid">
+        <article class="kpi-card">
+            <strong>Favoritos</strong>
+            <div style="font-size:2rem; margin-top:0.5rem;">{{ favorite_total }}</div>
+        </article>
+        <article class="kpi-card">
+            <strong>Interacciones</strong>
+            <div style="font-size:2rem; margin-top:0.5rem;">{{ interaction_total }}</div>
+        </article>
+        <article class="kpi-card">
+            <strong>Incidencias API abiertas</strong>
+            <div style="font-size:2rem; margin-top:0.5rem;">{{ unresolved_api_failures }}</div>
+        </article>
+    </div>
+</section>
+
+<section class="page-shell">
+    <div class="card-actions">
+        <a href="{% url 'dashboard_export_csv' 'users' %}" class="cta-button" style="text-decoration:none;">Exportar usuarios CSV</a>
+        <a href="{% url 'dashboard_export_csv' 'favorites' %}" class="cta-button" style="text-decoration:none;">Exportar favoritos CSV</a>
+        <a href="{% url 'dashboard_export_csv' 'interactions' %}" class="cta-button" style="text-decoration:none;">Exportar interacciones CSV</a>
+    </div>
+</section>
+
+<section class="page-shell">
+    <h2 class="section-title" style="font-size:1.5rem;">Usuarios por idioma</h2>
+    <div class="table-like">
+        {% for row in user_languages %}
+        <div class="table-row"><span>{{ row.language|upper }}</span><strong>{{ row.total }}</strong></div>
+        {% empty %}
+        <p>Sin datos suficientes.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-shell">
+    <h2 class="section-title" style="font-size:1.5rem;">Géneros más consultados o favoritos</h2>
+    <div class="table-like">
+        {% for row in genre_metrics %}
+        <div class="table-row"><span>{{ row.genre }}</span><strong>{{ row.total }}</strong></div>
+        {% empty %}
+        <p>Sin datos suficientes.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-shell">
+    <h2 class="section-title" style="font-size:1.5rem;">Cuota de plataformas en favoritos</h2>
+    <div class="table-like">
+        {% for row in platform_metrics %}
+        <div class="table-row"><span>{{ row.platform_name }}</span><strong>{{ row.total }}</strong></div>
+        {% empty %}
+        <p>Sin datos suficientes sobre plataformas vinculadas.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-shell">
+    <h2 class="section-title" style="font-size:1.5rem;">Incidencias recientes de APIs</h2>
+    <div class="table-like">
+        {% for incident in recent_api_failures %}
+        <div class="table-row">
+            <span>{{ incident.provider_name }} · {{ incident.operation }} · {{ incident.get_severity_display }}</span>
+            <strong>{{ incident.occurrences }}</strong>
+        </div>
+        {% empty %}
+        <p>No hay incidencias abiertas en la ventana actual.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.languageServer": "Pylance",
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "ruff.enable": true,
+  "files.associations": {
+    "**/*.html": "django-html"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+  "python.analysis.extraPaths": ["${workspaceFolder}"],
+  "python.envFile": "${workspaceFolder}/.env"
+}
