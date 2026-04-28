@@ -1,4 +1,5 @@
 {% extends 'web/base.html' %}
+{% load static %}
 
 {% block body_class %}app-surface favorites-page{% endblock %}
 {% block main_class %}container-wide{% endblock %}
@@ -23,7 +24,7 @@
         <article class="favorite-card">
             <div class="favorite-card-media">
                 {% if favorite.content_image_url %}
-                <img src="{{ favorite.content_image_url }}" alt="{{ favorite.title }}" class="card-image">
+                <img src="{{ favorite.content_image_url }}" alt="{{ favorite.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
                 {% else %}
                 <div class="card-placeholder card-placeholder--compact">
                     <span class="placeholder-badge">No Image</span>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stream Sync</title>
     <link rel="icon" type="image/x-icon" href="{% static 'web/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'web/style.css' %}?v=20260415-ui2">
+    <link rel="stylesheet" href="{% static 'web/style.css' %}?v=20260422-layoutfix3">
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -31,6 +31,20 @@
                     <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">Dashboard</a>
                     {% endif %}
                 </nav>
+
+                <details class="user-menu">
+                    <summary class="user-menu-trigger">
+                        <span class="user-menu-avatar">{{ user.user_name|default:"U"|first|upper }}</span>
+                        <span class="user-menu-copy">
+                            <strong>{{ user.user_name|default:"Cuenta" }}</strong>
+                            <small>{{ user.email|default:"Sesión activa" }}</small>
+                        </span>
+                    </summary>
+                    <div class="user-menu-panel">
+                        <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}">Perfil</a>
+                        <a href="{% url 'logout' %}">Cerrar sesión</a>
+                    </div>
+                </details>
                 {% endif %}
 
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cambiar tema">
@@ -49,6 +63,7 @@
         const body = document.body;
         const themeIcon = document.getElementById('theme-icon');
         const themeText = document.getElementById('theme-text');
+        const userMenus = document.querySelectorAll('.user-menu');
 
         // Check for saved theme preference
         const currentTheme = localStorage.getItem('theme');
@@ -70,6 +85,14 @@
             themeIcon.textContent = isDark ? '☀️' : '🌙';
             themeText.textContent = isDark ? 'Modo claro' : 'Modo noche';
         }
+
+        document.addEventListener('click', (event) => {
+            userMenus.forEach((menu) => {
+                if (!menu.contains(event.target)) {
+                    menu.removeAttribute('open');
+                }
+            });
+        });
     </script>
 </body>
 </html>

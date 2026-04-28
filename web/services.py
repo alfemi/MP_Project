@@ -90,7 +90,8 @@ class StreamApiService:
                 )
                 return []
             try:
-                return response.json()
+                data = response.json()
+                return cls._annotate_source_metadata(data, api_config)
             except (ValueError, JSONDecodeError) as exc:
                 cls._record_api_failure(
                     api_config,
@@ -146,6 +147,23 @@ class StreamApiService:
             )
             logger.exception("Unexpected error calling Stream API %s", url)
             return []
+
+    @classmethod
+    def _annotate_source_metadata(cls, data, api_config):
+        base_url = api_config["url"].rstrip("/")
+
+        if isinstance(data, list):
+            return [
+                {**item, "_api_base_url": base_url}
+                if isinstance(item, dict)
+                else item
+                for item in data
+            ]
+
+        if isinstance(data, dict):
+            return {**data, "_api_base_url": base_url}
+
+        return data
 
     @classmethod
     def _iter_data_sources(cls, endpoint, params=None):

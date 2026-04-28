@@ -1,223 +1,267 @@
 {% extends 'web/base.html' %}
+{% load static %}
 
 {% block body_class %}app-surface catalog-page{% endblock %}
-{% block main_class %}container-wide{% endblock %}
+{% block main_class %}container-wide catalog-main-frame{% endblock %}
 
 {% block content %}
-<div class="catalog-stack">
-    <section class="catalog-hero">
-        <div class="hero-copy">
-            <span class="eyebrow">Discovery unificado</span>
-            <h1 class="hero-title">Encuentra algo bueno para ver en menos tiempo.</h1>
-            <p class="hero-subtitle">
-                Unifica búsqueda, filtrado y acceso a fichas en una interfaz más clara,
-                compacta y usable para explorar catálogo real sin ruido innecesario.
-            </p>
-        </div>
-        <div class="hero-aside">
-            <div class="hero-stats-grid">
-                <div class="hero-stat-card">
-                    <span class="hero-stat-value">{{ movies|length }}</span>
-                    <span class="hero-stat-label">películas visibles</span>
+<div class="catalog-shell">
+    <aside class="catalog-sidebar">
+        <div class="catalog-sidebar-panel">
+            <a href="{% url 'home' %}" class="catalog-sidebar-brand" aria-label="Ir al catálogo de StreamSync">
+                <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="catalog-sidebar-logo">
+                <div class="catalog-sidebar-brand-copy">
+                    <span class="catalog-sidebar-brand-name">Stream Sync</span>
+                    <span class="catalog-sidebar-brand-text">Catálogo unificado para descubrir películas y series con una vista clara.</span>
                 </div>
-                <div class="hero-stat-card">
-                    <span class="hero-stat-value">{{ series|length }}</span>
-                    <span class="hero-stat-label">series visibles</span>
+            </a>
+
+            <div class="catalog-sidebar-group">
+                <span class="catalog-sidebar-label">Navegación</span>
+                <nav class="catalog-sidebar-nav" aria-label="Navegación del catálogo">
+                    <a href="{% url 'home' %}" class="catalog-sidebar-link is-active">Inicio</a>
+                    <a href="#movies-section" class="catalog-sidebar-link">Películas</a>
+                    <a href="#series-section" class="catalog-sidebar-link">Series</a>
+                    {% if request.session.user_id %}
+                    <a href="{% url 'profile' %}" class="catalog-sidebar-link">Perfil</a>
+                    <a href="{% url 'favorites' %}" class="catalog-sidebar-link">Favoritos</a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <div class="catalog-sidebar-group catalog-sidebar-group--stats">
+                <span class="catalog-sidebar-label">Resumen</span>
+                <div class="catalog-sidebar-stats">
+                    <div class="catalog-sidebar-stat">
+                        <strong>{{ movies|length }}</strong>
+                        <span>películas</span>
+                    </div>
+                    <div class="catalog-sidebar-stat">
+                        <strong>{{ series|length }}</strong>
+                        <span>series</span>
+                    </div>
                 </div>
             </div>
-            <div class="hero-pills">
-                <span class="accent-chip">Favoritos rápidos</span>
-                <span class="accent-chip">Filtros directos</span>
-                <span class="accent-chip">Fichas útiles</span>
-            </div>
+
+            <form method="get" class="catalog-sidebar-filters" aria-label="Filtros del catálogo">
+                <div class="catalog-sidebar-group">
+                    <div class="catalog-sidebar-heading">
+                        <div>
+                            <span class="catalog-sidebar-label">Filtros</span>
+                            <h2 class="catalog-sidebar-title">Explora el catálogo</h2>
+                        </div>
+                        <a href="{% url 'home' %}" class="text-button catalog-reset-button">Limpiar</a>
+                    </div>
+                </div>
+
+                <input type="hidden" name="type" value="{{ content_type }}">
+
+                <div class="catalog-type-switch" role="tablist" aria-label="Tipo de contenido">
+                    <a href="?type=all{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
+                       class="catalog-type-option {% if content_type == 'all' %}is-active{% endif %}">Todo</a>
+                    <a href="?type=movies{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
+                       class="catalog-type-option {% if content_type == 'movies' %}is-active{% endif %}">Películas</a>
+                    <a href="?type=series{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
+                       class="catalog-type-option {% if content_type == 'series' %}is-active{% endif %}">Series</a>
+                </div>
+
+                <label class="filter-field">
+                    <span class="filter-label">Buscar</span>
+                    <input type="text" name="title" placeholder="Busca títulos o sagas" value="{{ search_query }}">
+                </label>
+
+                <label class="filter-field">
+                    <span class="filter-label">Género</span>
+                    <select name="genre">
+                        <option value="">Todos</option>
+                        {% for val, label in genres %}
+                        <option value="{{ val }}" {% if selected_genre == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="filter-field">
+                    <span class="filter-label">Plataforma / Proveedor</span>
+                    <select name="director">
+                        <option value="">Todos</option>
+                        {% for id, name in directors %}
+                        <option value="{{ id }}" {% if selected_director == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <div class="catalog-sidebar-actions">
+                    <button type="submit" class="cta-button">Aplicar filtros</button>
+                    <a href="{% url 'home' %}" class="text-button">Restablecer</a>
+                </div>
+            </form>
         </div>
-    </section>
+    </aside>
 
-    <section class="catalog-toolbar-shell">
-        <div class="catalog-tabs" role="tablist" aria-label="Tipo de contenido">
-            <a href="?type=all{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
-               class="catalog-tab {% if content_type == 'all' %}is-active{% endif %}">Todo</a>
-            <a href="?type=movies{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
-               class="catalog-tab {% if content_type == 'movies' %}is-active{% endif %}">Películas</a>
-            <a href="?type=series{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
-               class="catalog-tab {% if content_type == 'series' %}is-active{% endif %}">Series</a>
-        </div>
-
-        <form method="get" class="catalog-filters" aria-label="Filtros de catálogo">
-            <input type="hidden" name="type" value="{{ content_type }}">
-            <label class="filter-field filter-field--search">
-                <span class="filter-label">Buscar</span>
-                <input type="text" name="title" placeholder="Títulos, franquicias o keywords" value="{{ search_query }}">
-            </label>
-            <label class="filter-field">
-                <span class="filter-label">Director</span>
-                <select name="director">
-                    <option value="">Todos</option>
-                    {% for id, name in directors %}
-                    <option value="{{ id }}" {% if selected_director == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="filter-field">
-                <span class="filter-label">Género</span>
-                <select name="genre">
-                    <option value="">Todos</option>
-                    {% for val, label in genres %}
-                    <option value="{{ val }}" {% if selected_genre == val %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <div class="filter-actions">
-                <button type="submit" class="cta-button">Aplicar</button>
-                <a href="{% url 'home' %}" class="text-button">Limpiar</a>
-            </div>
-        </form>
-    </section>
-
-    {% if api_partial %}
-    <section class="status-banner status-banner--warning">
-        <div>
-            <strong>Modo degradado activo.</strong>
-            Los resultados pueden ser parciales mientras uno o más proveedores externos responden con incidencias.
-        </div>
-        <span class="status-banner-tag">Resultados parciales</span>
-    </section>
-    {% endif %}
-
-    <section class="content-section-panel">
-        <div class="section-header">
+    <section class="catalog-main">
+        <header class="catalog-main-header">
             <div>
-                <span class="section-kicker">Selección principal</span>
-                <h2 class="section-title">Películas</h2>
+                <span class="eyebrow">Discovery unificado</span>
+                <h1 class="catalog-main-title">Encuentra algo bueno para ver sin perder tiempo.</h1>
+                <p class="catalog-main-description">La navegación y los filtros quedan fijos a la izquierda para que el catálogo empiece antes y las tarjetas sean lo importante.</p>
             </div>
-            <p class="section-description">Explora cine con una vista más limpia, compacta y fácil de escanear.</p>
-        </div>
+            <div class="catalog-main-summary">
+                <span class="accent-chip">Películas {{ movies|length }}</span>
+                <span class="accent-chip">Series {{ series|length }}</span>
+            </div>
+        </header>
 
-        {% if movies %}
-        <div class="content-grid">
-            {% for movie in movies %}
-            <article class="content-card {% if movie.is_blocked %}is-blocked{% endif %}">
-                <div class="content-card-media">
-                    {% if movie.image_url %}
-                    <img src="{{ movie.image_url }}" alt="{{ movie.title }}" class="card-image">
-                    {% else %}
-                    <div class="card-placeholder">
-                        <span class="placeholder-badge">No Image</span>
-                        <strong>{{ movie.title }}</strong>
-                        <small>{{ movie.director_name|default:"Director no disponible" }}</small>
-                    </div>
-                    {% endif %}
+        {% if api_partial %}
+        <section class="status-banner status-banner--warning">
+            <div>
+                <strong>Modo degradado activo.</strong>
+                Los resultados pueden ser parciales mientras uno o más proveedores externos responden con incidencias.
+            </div>
+            <span class="status-banner-tag">Resultados parciales</span>
+        </section>
+        {% endif %}
 
-                    {% if movie.is_favorite %}
-                    <span class="floating-badge">Favorito</span>
-                    {% endif %}
-
-                    {% if movie.is_blocked %}
-                    <div class="lock-overlay">
-                        <span class="lock-icon">🔒</span>
-                        <span class="lock-label">{{ movie.block_message }}</span>
-                    </div>
-                    {% endif %}
+        <section class="content-section-panel" id="movies-section">
+            <div class="section-header">
+                <div>
+                    <span class="section-kicker">Selección principal</span>
+                    <h2 class="section-title">Películas</h2>
                 </div>
-                <div class="content-card-body">
-                    <div class="content-card-topline">
-                        <span class="content-badge">{{ movie.genre_description|default:"Contenido" }}</span>
-                        <span class="content-meta-inline">{{ movie.age_rating_label|default:"TP" }}</span>
-                    </div>
-                    <h3 class="content-card-title">{{ movie.title }}</h3>
-                    <p class="content-card-meta">
-                        <span>{{ movie.director_name|default:"Director no disponible" }}</span>
-                        <span>•</span>
-                        <span>{{ movie.platform_name|default:"Plataforma externa" }}</span>
-                    </p>
-                    <div class="content-card-actions">
-                        <a href="{% url 'content_detail' 'movie' movie.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
-                        {% if movie.rating %}
-                        <span class="metric-pill">★ {{ movie.rating }}</span>
+                <p class="section-description">Pósters visibles, metadatos mínimos y acceso directo a la ficha.</p>
+            </div>
+
+            {% if movies %}
+            <div class="content-grid content-grid--catalog">
+                {% for movie in movies %}
+                <article class="content-card content-card--catalog {% if movie.is_blocked %}is-blocked{% endif %}">
+                    <div class="content-card-media content-card-media--poster">
+                        {% if movie.image_url %}
+                        <img src="{{ movie.image_url }}" alt="{{ movie.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
+                        {% else %}
+                        <div class="card-placeholder">
+                            <span class="placeholder-badge">No Image</span>
+                            <strong>{{ movie.title }}</strong>
+                            <small>{{ movie.director_name|default:"Director no disponible" }}</small>
+                        </div>
+                        {% endif %}
+
+                        {% if movie.is_favorite %}
+                        <span class="floating-badge">Favorito</span>
+                        {% endif %}
+                        {% if movie.image_source %}
+                        <span class="floating-badge floating-badge--source">{{ movie.image_source|title }}</span>
+                        {% endif %}
+
+                        {% if movie.is_blocked %}
+                        <div class="lock-overlay">
+                            <span class="lock-icon">🔒</span>
+                            <span class="lock-label">{{ movie.block_message }}</span>
+                        </div>
                         {% endif %}
                     </div>
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-panel">
-            <div class="empty-state empty-state--catalog">
-                <div class="empty-state-icon">🎞️</div>
-                <h3>No hay películas con este filtro</h3>
-                <p>Prueba a limpiar filtros o cambiar el tipo de contenido para ampliar resultados.</p>
-                <a href="{% url 'home' %}" class="text-button">Volver al catálogo completo</a>
+                    <div class="content-card-body">
+                        <div class="content-card-topline">
+                            <span class="content-badge">{{ movie.genre_description|default:"Contenido" }}</span>
+                            <span class="content-meta-inline">{{ movie.age_rating_label|default:"TP" }}</span>
+                        </div>
+                        <h3 class="content-card-title">{{ movie.title }}</h3>
+                        <p class="content-card-meta">
+                            <span>{{ movie.platform_name|default:"Plataforma externa" }}</span>
+                            <span>•</span>
+                            <span>{{ movie.director_name|default:"Director no disponible" }}</span>
+                        </p>
+                        <div class="content-card-actions">
+                            <a href="{% url 'content_detail' 'movie' movie.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
+                            {% if movie.rating %}
+                            <span class="metric-pill">★ {{ movie.rating }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
             </div>
-        </div>
-        {% endif %}
-    </section>
-
-    <section class="content-section-panel">
-        <div class="section-header">
-            <div>
-                <span class="section-kicker">Continuar explorando</span>
-                <h2 class="section-title">Series</h2>
-            </div>
-            <p class="section-description">Compara género, edad recomendada y plataforma sin perder jerarquía visual.</p>
-        </div>
-
-        {% if series %}
-        <div class="content-grid">
-            {% for serie in series %}
-            <article class="content-card {% if serie.is_blocked %}is-blocked{% endif %}">
-                <div class="content-card-media">
-                    {% if serie.image_url %}
-                    <img src="{{ serie.image_url }}" alt="{{ serie.title }}" class="card-image">
-                    {% else %}
-                    <div class="card-placeholder">
-                        <span class="placeholder-badge">No Image</span>
-                        <strong>{{ serie.title }}</strong>
-                        <small>{{ serie.director_name|default:"Serie sin imagen" }}</small>
-                    </div>
-                    {% endif %}
-
-                    {% if serie.is_favorite %}
-                    <span class="floating-badge">Favorito</span>
-                    {% endif %}
-
-                    {% if serie.is_blocked %}
-                    <div class="lock-overlay">
-                        <span class="lock-icon">🔒</span>
-                        <span class="lock-label">{{ serie.block_message }}</span>
-                    </div>
-                    {% endif %}
+            {% else %}
+            <div class="empty-panel">
+                <div class="empty-state empty-state--catalog">
+                    <div class="empty-state-icon">🎞️</div>
+                    <h3>No hay películas con este filtro</h3>
+                    <p>Prueba a limpiar filtros o cambiar el tipo de contenido para ampliar resultados.</p>
+                    <a href="{% url 'home' %}" class="text-button">Volver al catálogo completo</a>
                 </div>
-                <div class="content-card-body">
-                    <div class="content-card-topline">
-                        <span class="content-badge">{{ serie.genre_description|default:"Serie" }}</span>
-                        <span class="content-meta-inline">{{ serie.age_rating_label|default:"TP" }}</span>
-                    </div>
-                    <h3 class="content-card-title">{{ serie.title }}</h3>
-                    <p class="content-card-meta">
-                        <span>{{ serie.director_name|default:"Director no disponible" }}</span>
-                        <span>•</span>
-                        <span>{{ serie.platform_name|default:"Plataforma externa" }}</span>
-                    </p>
-                    <div class="content-card-actions">
-                        <a href="{% url 'content_detail' 'series' serie.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
-                        {% if serie.rating %}
-                        <span class="metric-pill">★ {{ serie.rating }}</span>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="content-section-panel" id="series-section">
+            <div class="section-header">
+                <div>
+                    <span class="section-kicker">Continuar explorando</span>
+                    <h2 class="section-title">Series</h2>
+                </div>
+                <p class="section-description">La misma estructura clara para comparar series sin ruido visual.</p>
+            </div>
+
+            {% if series %}
+            <div class="content-grid content-grid--catalog">
+                {% for serie in series %}
+                <article class="content-card content-card--catalog {% if serie.is_blocked %}is-blocked{% endif %}">
+                    <div class="content-card-media content-card-media--poster">
+                        {% if serie.image_url %}
+                        <img src="{{ serie.image_url }}" alt="{{ serie.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
+                        {% else %}
+                        <div class="card-placeholder">
+                            <span class="placeholder-badge">No Image</span>
+                            <strong>{{ serie.title }}</strong>
+                            <small>{{ serie.director_name|default:"Serie sin imagen" }}</small>
+                        </div>
+                        {% endif %}
+
+                        {% if serie.is_favorite %}
+                        <span class="floating-badge">Favorito</span>
+                        {% endif %}
+                        {% if serie.image_source %}
+                        <span class="floating-badge floating-badge--source">{{ serie.image_source|title }}</span>
+                        {% endif %}
+
+                        {% if serie.is_blocked %}
+                        <div class="lock-overlay">
+                            <span class="lock-icon">🔒</span>
+                            <span class="lock-label">{{ serie.block_message }}</span>
+                        </div>
                         {% endif %}
                     </div>
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-panel">
-            <div class="empty-state empty-state--catalog">
-                <div class="empty-state-icon">📺</div>
-                <h3>No hay series con este filtro</h3>
-                <p>Amplía la búsqueda o cambia el tipo de contenido para descubrir más opciones.</p>
-                <a href="{% url 'home' %}" class="text-button">Restablecer filtros</a>
+                    <div class="content-card-body">
+                        <div class="content-card-topline">
+                            <span class="content-badge">{{ serie.genre_description|default:"Serie" }}</span>
+                            <span class="content-meta-inline">{{ serie.age_rating_label|default:"TP" }}</span>
+                        </div>
+                        <h3 class="content-card-title">{{ serie.title }}</h3>
+                        <p class="content-card-meta">
+                            <span>{{ serie.platform_name|default:"Plataforma externa" }}</span>
+                            <span>•</span>
+                            <span>{{ serie.director_name|default:"Director no disponible" }}</span>
+                        </p>
+                        <div class="content-card-actions">
+                            <a href="{% url 'content_detail' 'series' serie.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
+                            {% if serie.rating %}
+                            <span class="metric-pill">★ {{ serie.rating }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
             </div>
-        </div>
-        {% endif %}
+            {% else %}
+            <div class="empty-panel">
+                <div class="empty-state empty-state--catalog">
+                    <div class="empty-state-icon">📺</div>
+                    <h3>No hay series con este filtro</h3>
+                    <p>Amplía la búsqueda o cambia el tipo de contenido para descubrir más opciones.</p>
+                    <a href="{% url 'home' %}" class="text-button">Restablecer filtros</a>
+                </div>
+            </div>
+            {% endif %}
+        </section>
     </section>
 </div>
 {% endblock %}

@@ -1,5 +1,6 @@
 import csv
 import logging
+from functools import wraps
 
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.password_validation import validate_password
@@ -14,6 +15,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .content_service import ContentCatalogService
+from .forms import PasswordChangeForm, ProfileUpdateForm
 from .image_resolver import ContentImageService
 from .models import (
     ApiFailureEvent,
@@ -40,7 +42,7 @@ AGE_RATING_MAP = {
 LOGIN_FAILURE_WINDOW_MINUTES = 15
 LOGIN_FAILURE_LIMIT = 5
 API_PARTIAL_WINDOW_MINUTES = 10
-VALID_CONTENT_TYPES = {'movie', 'series'}
+VALID_CONTENT_TYPES = {"movie", "series"}
 GENRE_CHOICES = InfoUser.GENRE_CHOICES
 LANGUAGE_CHOICES = InfoUser.LANGUAGE_CHOICES
 SEX_CHOICES = InfoUser.SEX_CHOICES
@@ -48,21 +50,22 @@ SEX_CHOICES = InfoUser.SEX_CHOICES
 
 # --- HELPER ---
 
+
 def _get_client_ip(request):
     """Extreu la IP real del client, tenint en compte proxies."""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
-        return x_forwarded_for.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR', '')
+        return x_forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "")
 
 
 def _register_context(form_data=None, error=None):
     return {
-        'error': error,
-        'genres': GENRE_CHOICES,
-        'languages': LANGUAGE_CHOICES,
-        'sex_choices': SEX_CHOICES,
-        'form_data': form_data or {},
+        "error": error,
+        "genres": GENRE_CHOICES,
+        "languages": LANGUAGE_CHOICES,
+        "sex_choices": SEX_CHOICES,
+        "form_data": form_data or {},
     }
 
 
@@ -77,7 +80,7 @@ def _extract_error_message(exc):
 
 
 def _get_current_user(request):
-    user_id = request.session.get('user_id')
+    user_id = request.session.get("user_id")
     if not user_id:
         return None
     try:
@@ -89,15 +92,29 @@ def _get_current_user(request):
 def _get_logged_in_user_or_redirect(request):
     user = _get_current_user(request)
     if not user:
-        return None, redirect('login')
+        return None, redirect("login")
     if not user.is_active:
         request.session.flush()
-        return None, redirect('login')
+        return None, redirect("login")
     return user, None
 
 
+def session_login_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        user, redirect_response = _get_logged_in_user_or_redirect(request)
+        if redirect_response:
+            return redirect_response
+        request.functional_user = user
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
+
+
 def _is_internal_user(request, functional_user):
-    return bool(functional_user and functional_user.rank == 'sysadmin') or bool(getattr(request.user, 'is_superuser', False))
+    return bool(functional_user and functional_user.rank == "sysadmin") or bool(
+        getattr(request.user, "is_superuser", False)
+    )
 
 
 def _get_user_profile_or_redirect(request):
@@ -107,7 +124,7 @@ def _get_user_profile_or_redirect(request):
     try:
         return user, InfoUser.objects.get(user=user), None
     except InfoUser.DoesNotExist:
-        return None, None, redirect('login')
+        return None, None, redirect("login")
 
 
 def _parse_preferences(info_user):
@@ -116,13 +133,15 @@ def _parse_preferences(info_user):
 
 def _apply_age_gate(normalized_item, user_age, age_rating_id):
     min_age_required = AGE_RATING_MAP.get(age_rating_id or 1, 0)
-    normalized_item['is_blocked'] = user_age < min_age_required
-    if normalized_item['is_blocked']:
-        normalized_item['block_message'] = f"Contenido para +{min_age_required} años"
+    normalized_item["is_blocked"] = user_age < min_age_required
+    if normalized_item["is_blocked"]:
+        normalized_item["block_message"] = f"Contenido para +{min_age_required} años"
     return normalized_item
 
 
-def _normalize_catalog_items(items, item_type, info_user, director_dict, genre_dict, overrides_map, favorites):
+def _normalize_catalog_items(
+    items, item_type, info_user, director_dict, genre_dict, overrides_map, favorites
+):
     if not items or not isinstance(items, list):
         return []
 
@@ -139,8 +158,8 @@ def _normalize_catalog_items(items, item_type, info_user, director_dict, genre_d
             overrides_map,
             AGE_RATING_MAP,
         )
-        _apply_age_gate(normalized, info_user.age, item.get('age_rating_id'))
-        normalized['is_favorite'] = (item_type, normalized['content_id']) in favorites
+        _apply_age_gate(normalized, info_user.age, item.get("age_rating_id"))
+        normalized["is_favorite"] = (item_type, normalized["content_id"]) in favorites
         result.append(normalized)
     return result
 
@@ -166,36 +185,44 @@ def _build_catalog_context(
     }
 
     return {
-        'user': user,
-        'user_age': info_user.age,
-        'movies': _normalize_catalog_items(
+        "user": user,
+        "user_age": info_user.age,
+        "movies": _normalize_catalog_items(
             movies,
-            'movie',
+            "movie",
             info_user,
             director_dict,
             genre_dict,
             overrides_map,
             favorites,
         ),
-        'series': _normalize_catalog_items(
+        "series": _normalize_catalog_items(
             series,
-            'series',
+            "series",
             info_user,
             director_dict,
             genre_dict,
             overrides_map,
             favorites,
         ),
-        'genres': genres_list,
-        'directors': directors_list,
-        'selected_genre': selected_genre,
-        'selected_director': selected_director,
-        'content_type': content_type,
-        'search_query': search_query,
+        "genres": genres_list,
+        "directors": directors_list,
+        "selected_genre": selected_genre,
+        "selected_director": selected_director,
+        "content_type": content_type,
+        "search_query": search_query,
     }
 
 
-def _record_interaction(user, content_type, content_id, interaction_type, title="", genre="", platform_name=""):
+def _record_interaction(
+    user,
+    content_type,
+    content_id,
+    interaction_type,
+    title="",
+    genre="",
+    platform_name="",
+):
     ContentInteraction.objects.create(
         user=user,
         content_type=content_type,
@@ -210,7 +237,8 @@ def _record_interaction(user, content_type, content_id, interaction_type, title=
 def _recent_api_partial_state():
     return ApiFailureEvent.objects.filter(
         is_resolved=False,
-        last_seen__gte=timezone.now() - timezone.timedelta(minutes=API_PARTIAL_WINDOW_MINUTES),
+        last_seen__gte=timezone.now()
+        - timezone.timedelta(minutes=API_PARTIAL_WINDOW_MINUTES),
     ).exists()
 
 
@@ -233,9 +261,9 @@ def _build_api_filters(selected_genre="", selected_director="", search_query="")
     return {
         key: value
         for key, value in {
-            'genre': selected_genre,
-            'director': selected_director,
-            'title': search_query,
+            "genre": selected_genre,
+            "director": selected_director,
+            "title": search_query,
         }.items()
         if value
     }
@@ -245,9 +273,9 @@ def _fetch_catalog_content(content_type, api_filters):
     movies = []
     series = []
     try:
-        if content_type in ['all', 'movies']:
+        if content_type in ["all", "movies"]:
             movies = StreamApiService.get_movies(api_filters)
-        if content_type in ['all', 'series']:
+        if content_type in ["all", "series"]:
             series = StreamApiService.get_series(api_filters)
     except Exception as exc:
         logger.warning("Error fetching content from Stream APIs: %s", exc)
@@ -265,10 +293,10 @@ def _get_detail_reference_data(item):
 
 
 def _build_recommendations(content_type, item, info_user, genre_dict, director_dict):
-    genre_filter = {'genre': item.get('genre_id')}
+    genre_filter = {"genre": item.get("genre_id")}
     candidates = (
         StreamApiService.get_movies(genre_filter)
-        if content_type == 'movie'
+        if content_type == "movie"
         else StreamApiService.get_series(genre_filter)
     )
     recommendation_overrides = ContentImageService.build_override_map(candidates)
@@ -293,92 +321,123 @@ def _build_recommendations(content_type, item, info_user, genre_dict, director_d
 
 def _dashboard_cutoff(window):
     now = timezone.now()
-    if window == '7d':
+    if window == "7d":
         return now - timezone.timedelta(days=7)
-    if window == '30d':
+    if window == "30d":
         return now - timezone.timedelta(days=30)
     return None
 
 
+def _build_profile_forms(user, info_user, profile_data=None, password_data=None):
+    profile_initial = {
+        "email": user.email,
+        "address": info_user.address,
+        "language": info_user.language,
+        "age": info_user.age,
+        "sex": info_user.sex,
+        "preferences": InfoUser.parse_preferences(info_user.preferences),
+    }
+    return {
+        "profile_form": ProfileUpdateForm(
+            profile_data or None,
+            initial=profile_initial,
+            user=user,
+        ),
+        "password_form": PasswordChangeForm(password_data or None, user=user),
+    }
+
+
 # --- VISTES DE NAVEGACIÓ ---
 
+
 def root_redirect(request):
-    return redirect('home')
+    return redirect("catalog")
 
 
 # --- VISTES D'USUARI ---
 
+
 @never_cache
 @ensure_csrf_cookie
 def register(request):
-    if request.method == 'POST':
-        user_name = normalize_user_name(request.POST.get('user_name'))
-        email = normalize_email(request.POST.get('email'))
-        password = request.POST.get('password')
-        address = (request.POST.get('address') or '').strip()
-        language = (request.POST.get('language') or '').strip()
-        age = (request.POST.get('age') or '').strip()
-        sex = (request.POST.get('sex') or '').strip()
-        selected_genres = [genre.strip() for genre in request.POST.getlist('genres') if genre.strip()]
+    if request.method == "POST":
+        user_name = normalize_user_name(request.POST.get("user_name"))
+        email = normalize_email(request.POST.get("email"))
+        password = request.POST.get("password")
+        address = (request.POST.get("address") or "").strip()
+        language = (request.POST.get("language") or "").strip()
+        age = (request.POST.get("age") or "").strip()
+        sex = (request.POST.get("sex") or "").strip()
+        selected_genres = [
+            genre.strip() for genre in request.POST.getlist("genres") if genre.strip()
+        ]
 
         form_data = {
-            'user_name': user_name,
-            'email': email,
-            'address': address,
-            'language': language,
-            'age': age,
-            'sex': sex,
-            'genres': selected_genres,
+            "user_name": user_name,
+            "email": email,
+            "address": address,
+            "language": language,
+            "age": age,
+            "sex": sex,
+            "genres": selected_genres,
         }
 
         if not all([user_name, email, password, language, age, sex]):
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Completa todos los campos obligatorios.'),
+                "web/register.html",
+                _register_context(form_data, "Completa todos los campos obligatorios."),
             )
 
         if language not in {value for value, _ in LANGUAGE_CHOICES}:
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Selecciona un idioma válido.'),
+                "web/register.html",
+                _register_context(form_data, "Selecciona un idioma válido."),
             )
 
         if sex not in {value for value, _ in SEX_CHOICES}:
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Selecciona una opción válida para el género.'),
+                "web/register.html",
+                _register_context(
+                    form_data, "Selecciona una opción válida para el género."
+                ),
             )
 
         if len(set(selected_genres)) < 5:
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Selecciona al menos 5 géneros distintos.'),
+                "web/register.html",
+                _register_context(
+                    form_data, "Selecciona al menos 5 géneros distintos."
+                ),
             )
 
-        invalid_genres = [genre for genre in selected_genres if genre not in InfoUser.valid_genre_values()]
+        invalid_genres = [
+            genre
+            for genre in selected_genres
+            if genre not in InfoUser.valid_genre_values()
+        ]
         if invalid_genres:
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Se han enviado géneros no válidos.'),
+                "web/register.html",
+                _register_context(form_data, "Se han enviado géneros no válidos."),
             )
 
         if FunctionalUser.objects.filter(user_name__iexact=user_name).exists():
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Ese nombre de usuario ya está en uso.'),
+                "web/register.html",
+                _register_context(form_data, "Ese nombre de usuario ya está en uso."),
             )
 
         if FunctionalUser.objects.filter(email__iexact=email).exists():
             return render(
                 request,
-                'web/register.html',
-                _register_context(form_data, 'Ese email ya está registrado.'),
+                "web/register.html",
+                _register_context(form_data, "Ese email ya está registrado."),
             )
 
         try:
@@ -388,7 +447,7 @@ def register(request):
                     user_name=user_name,
                     email=email,
                     password=make_password(password),
-                    rank='final-user',
+                    rank="final-user",
                 )
 
                 InfoUser.objects.create(
@@ -397,35 +456,37 @@ def register(request):
                     language=language,
                     age=age,
                     sex=sex,
-                    preferences=','.join(selected_genres),
+                    preferences=",".join(selected_genres),
                 )
         except ValidationError as exc:
             return render(
                 request,
-                'web/register.html',
+                "web/register.html",
                 _register_context(form_data, _extract_error_message(exc)),
             )
 
-        return redirect('login')
+        return redirect("login")
 
-    return render(request, 'web/register.html', _register_context())
+    return render(request, "web/register.html", _register_context())
 
 
 @never_cache
 @ensure_csrf_cookie
 def login_view(request):
-    if request.method == 'POST':
-        user_name = normalize_user_name(request.POST.get('user_name', ''))
-        password = request.POST.get('password', '')
+    if request.method == "POST":
+        user_name = normalize_user_name(request.POST.get("user_name", ""))
+        password = request.POST.get("password", "")
         ip = _get_client_ip(request)
-        user_agent = request.META.get('HTTP_USER_AGENT', '')[:512]
-        invalid_credentials_message = 'Credenciales no válidas.'
+        user_agent = request.META.get("HTTP_USER_AGENT", "")[:512]
+        invalid_credentials_message = "Credenciales no válidas."
 
         if _get_recent_failed_attempts(user_name, ip).count() >= LOGIN_FAILURE_LIMIT:
             return render(
                 request,
-                'web/login.html',
-                {'error': 'Demasiados intentos fallidos. Espera unos minutos antes de volver a intentarlo.'},
+                "web/login.html",
+                {
+                    "error": "Demasiados intentos fallidos. Espera unos minutos antes de volver a intentarlo."
+                },
             )
 
         try:
@@ -436,46 +497,56 @@ def login_view(request):
                     user_name_attempted=user_name,
                     ip_address=ip,
                     user_agent=user_agent,
-                    reason='account_inactive',
+                    reason="account_inactive",
                 )
-                return render(request, 'web/login.html', {'error': invalid_credentials_message})
+                return render(
+                    request, "web/login.html", {"error": invalid_credentials_message}
+                )
 
             if check_password(password, user.password):
                 user.last_login = timezone.now()
-                user.save(update_fields=['last_login'])
-                request.session['user_id'] = user.id
+                user.save(update_fields=["last_login"])
+                request.session["user_id"] = user.id
                 request.session.set_expiry(60 * 60 * 12)
-                return redirect('home')
+                return redirect("home")
 
             FailedLoginAttempt.objects.create(
                 user_name_attempted=user_name,
                 ip_address=ip,
                 user_agent=user_agent,
-                reason='wrong_password',
+                reason="wrong_password",
             )
-            return render(request, 'web/login.html', {'error': invalid_credentials_message})
+            return render(
+                request, "web/login.html", {"error": invalid_credentials_message}
+            )
 
         except FunctionalUser.DoesNotExist:
             FailedLoginAttempt.objects.create(
                 user_name_attempted=user_name,
                 ip_address=ip,
                 user_agent=user_agent,
-                reason='user_not_found',
+                reason="user_not_found",
             )
-            return render(request, 'web/login.html', {'error': invalid_credentials_message})
+            return render(
+                request, "web/login.html", {"error": invalid_credentials_message}
+            )
 
-    return render(request, 'web/login.html')
+    return render(request, "web/login.html")
 
 
-def home(request):
-    user, info_user, redirect_response = _get_user_profile_or_redirect(request)
-    if redirect_response:
-        return redirect_response
+def catalog(request):
+    user = _get_current_user(request)  # Optional user
+    info_user = None
+    if user:
+        try:
+            info_user = InfoUser.objects.get(user=user)
+        except InfoUser.DoesNotExist:
+            pass
 
-    selected_genre = request.GET.get('genre', '')
-    selected_director = request.GET.get('director', '')
-    content_type = request.GET.get('type', 'all')
-    search_query = request.GET.get('title', '')
+    selected_genre = request.GET.get("genre", "")
+    selected_director = request.GET.get("director", "")
+    content_type = request.GET.get("type", "all")
+    search_query = request.GET.get("title", "")
     api_filters = _build_api_filters(selected_genre, selected_director, search_query)
 
     genres_list = StreamApiService.get_genres()
@@ -494,21 +565,61 @@ def home(request):
         content_type,
         search_query,
     )
-    context['api_partial'] = _recent_api_partial_state()
-    return render(request, 'web/home.html', context)
+    context["api_partial"] = _recent_api_partial_state()
+    return render(request, "web/home.html", context)
 
 
-def content_detail(request, content_type, content_id):
+def home(request):
     user, info_user, redirect_response = _get_user_profile_or_redirect(request)
     if redirect_response:
         return redirect_response
 
+    selected_genre = request.GET.get("genre", "")
+    selected_director = request.GET.get("director", "")
+    content_type = request.GET.get("type", "all")
+    search_query = request.GET.get("title", "")
+    api_filters = _build_api_filters(selected_genre, selected_director, search_query)
+
+    genres_list = StreamApiService.get_genres()
+    directors_list = StreamApiService.get_directors()
+    movies, series = _fetch_catalog_content(content_type, api_filters)
+
+    context = _build_catalog_context(
+        user,
+        info_user,
+        movies,
+        series,
+        genres_list,
+        directors_list,
+        selected_genre,
+        selected_director,
+        content_type,
+        search_query,
+    )
+    context["api_partial"] = _recent_api_partial_state()
+    return render(request, "web/home.html", context)
+
+
+def content_detail(request, content_type, content_id):
+    user = _get_current_user(request)  # Optional
+    info_user = None
+    if user:
+        try:
+            info_user = InfoUser.objects.get(user=user)
+        except InfoUser.DoesNotExist:
+            pass
+
     if content_type not in VALID_CONTENT_TYPES:
-        return redirect('home')
+        return redirect("catalog")
 
     item = StreamApiService.get_content_detail(content_type, content_id)
     if not item:
-        return render(request, 'web/content_detail.html', {'user': user, 'content': None}, status=404)
+        return render(
+            request,
+            "web/content_detail.html",
+            {"user": user, "content": None},
+            status=404,
+        )
 
     genre_dict, director_dict, overrides_map = _get_detail_reference_data(item)
     content = ContentCatalogService.normalize_item(
@@ -519,68 +630,89 @@ def content_detail(request, content_type, content_id):
         overrides_map,
         AGE_RATING_MAP,
     )
-    _apply_age_gate(content, info_user.age, item.get('age_rating_id'))
+    if info_user:
+        _apply_age_gate(content, info_user.age, item.get("age_rating_id"))
+    else:
+        content["is_blocked"] = False  # No block for anonymous
 
-    content['is_favorite'] = FavoriteContent.objects.filter(
-        user=user,
-        content_type=content_type,
-        content_id=str(content_id),
-    ).exists()
-    content['recommendations'] = _build_recommendations(
-        content_type,
-        item,
-        info_user,
-        genre_dict,
-        director_dict,
-    )
+    if user:
+        content["is_favorite"] = FavoriteContent.objects.filter(
+            user=user,
+            content_type=content_type,
+            content_id=str(content_id),
+        ).exists()
+        content["recommendations"] = _build_recommendations(
+            content_type,
+            item,
+            info_user,
+            genre_dict,
+            director_dict,
+        )
+        _record_interaction(
+            user,
+            content_type,
+            content_id,
+            "view",
+            title=content["title"],
+            genre=content["genre_description"],
+            platform_name=content["platform_name"],
+        )
+    else:
+        content["is_favorite"] = False
+        content["recommendations"] = []
 
-    _record_interaction(
-        user,
-        content_type,
-        content_id,
-        'view',
-        title=content['title'],
-        genre=content['genre_description'],
-        platform_name=content['platform_name'],
+    return render(
+        request,
+        "web/content_detail.html",
+        {"user": user, "content": content, "api_partial": _recent_api_partial_state()},
     )
-    return render(request, 'web/content_detail.html', {'user': user, 'content': content, 'api_partial': _recent_api_partial_state()})
 
 
 def toggle_favorite(request, content_type, content_id):
     user, redirect_response = _get_logged_in_user_or_redirect(request)
     if redirect_response:
         return redirect_response
-    if request.method != 'POST' or content_type not in VALID_CONTENT_TYPES:
-        return redirect('home')
+    if request.method != "POST" or content_type not in VALID_CONTENT_TYPES:
+        return redirect("home")
 
-    favorite = FavoriteContent.objects.filter(user=user, content_type=content_type, content_id=str(content_id)).first()
-    next_url = request.POST.get('next') or reverse('favorites')
+    favorite = FavoriteContent.objects.filter(
+        user=user, content_type=content_type, content_id=str(content_id)
+    ).first()
+    next_url = request.POST.get("next") or reverse("favorites")
     if favorite:
         title = favorite.title
         genre = favorite.genre
         platform_name = favorite.platform_name
         favorite.delete()
-        _record_interaction(user, content_type, content_id, 'favorite_remove', title=title, genre=genre, platform_name=platform_name)
+        _record_interaction(
+            user,
+            content_type,
+            content_id,
+            "favorite_remove",
+            title=title,
+            genre=genre,
+            platform_name=platform_name,
+        )
         return redirect(next_url)
 
     FavoriteContent.objects.create(
         user=user,
         content_type=content_type,
         content_id=str(content_id),
-        title=request.POST.get('title') or 'Sin título',
-        genre=request.POST.get('genre') or '',
-        platform_name=request.POST.get('platform_name') or '',
-        platform_url=request.POST.get('platform_url') or '',
-        content_image_url=request.POST.get('image_url') or '',
+        title=request.POST.get("title") or "Sin título",
+        genre=request.POST.get("genre") or "",
+        platform_name=request.POST.get("platform_name") or "",
+        platform_url=request.POST.get("platform_url") or "",
+        content_image_url=request.POST.get("image_url") or "",
     )
     _record_interaction(
         user,
         content_type,
         content_id,
-        'favorite_add',
-        title=request.POST.get('title') or 'Sin título',
-        genre=request.POST.get('genre') or '',
-        platform_name=request.POST.get('platform_name') or '',
+        "favorite_add",
+        title=request.POST.get("title") or "Sin título",
+        genre=request.POST.get("genre") or "",
+        platform_name=request.POST.get("platform_name") or "",
     )
     return redirect(next_url)
 
@@ -590,8 +722,87 @@ def favorites(request):
     if redirect_response:
         return redirect_response
 
-    favorites_qs = FavoriteContent.objects.filter(user=user).order_by('-created_at')
-    return render(request, 'web/favorites.html', {'user': user, 'favorites': favorites_qs, 'api_partial': _recent_api_partial_state()})
+    favorites_qs = FavoriteContent.objects.filter(user=user).order_by("-created_at")
+    return render(
+        request,
+        "web/favorites.html",
+        {
+            "user": user,
+            "favorites": favorites_qs,
+            "api_partial": _recent_api_partial_state(),
+        },
+    )
+
+
+@session_login_required
+def profile(request):
+    user = request.functional_user
+    info_user = InfoUser.objects.get(user=user)
+    success = ""
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "update_profile":
+            forms_context = _build_profile_forms(user, info_user, profile_data=request.POST)
+            profile_form = forms_context["profile_form"]
+            password_form = forms_context["password_form"]
+            if profile_form.is_valid():
+                profile_form.save(user, info_user)
+                info_user.refresh_from_db()
+                forms_context = _build_profile_forms(user, info_user)
+                profile_form = forms_context["profile_form"]
+                password_form = forms_context["password_form"]
+                success = "Perfil actualizado correctamente."
+            return render(
+                request,
+                "web/profile.html",
+                {
+                    "user": user,
+                    "info": info_user,
+                    "success": success,
+                    "profile_form": profile_form,
+                    "password_form": password_form,
+                },
+            )
+
+        if action == "change_password":
+            forms_context = _build_profile_forms(user, info_user, password_data=request.POST)
+            profile_form = forms_context["profile_form"]
+            password_form = forms_context["password_form"]
+            if password_form.is_valid():
+                password_form.save(user)
+                password_form = PasswordChangeForm(user=user)
+                success = "Contraseña actualizada correctamente."
+            return render(
+                request,
+                "web/profile.html",
+                {
+                    "user": user,
+                    "info": info_user,
+                    "success": success,
+                    "profile_form": profile_form,
+                    "password_form": password_form,
+                },
+            )
+
+    forms_context = _build_profile_forms(user, info_user)
+    return render(
+        request,
+        "web/profile.html",
+        {
+            "user": user,
+            "info": info_user,
+            "profile_form": forms_context["profile_form"],
+            "password_form": forms_context["password_form"],
+        },
+    )
+
+
+@session_login_required
+def logout_view(request):
+    request.session.flush()
+    return redirect("login")
 
 
 def dashboard(request):
@@ -599,9 +810,9 @@ def dashboard(request):
     if redirect_response:
         return redirect_response
     if not _is_internal_user(request, user):
-        return redirect('home')
+        return redirect("home")
 
-    window = request.GET.get('window', 'total')
+    window = request.GET.get("window", "total")
     cutoff = _dashboard_cutoff(window)
 
     interactions = ContentInteraction.objects.all()
@@ -613,36 +824,44 @@ def dashboard(request):
         api_failures = api_failures.filter(last_seen__gte=cutoff)
 
     user_languages = list(
-        InfoUser.objects.values('language').annotate(total=Count('user')).order_by('-total')
+        InfoUser.objects.values("language")
+        .annotate(total=Count("user"))
+        .order_by("-total")
     )
     genre_metrics = list(
-        interactions.exclude(genre='').values('genre').annotate(total=Count('id')).order_by('-total')[:8]
+        interactions.exclude(genre="")
+        .values("genre")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:8]
     )
     platform_metrics = list(
-        favorites_qs.exclude(platform_name='').values('platform_name').annotate(total=Count('id')).order_by('-total')[:8]
+        favorites_qs.exclude(platform_name="")
+        .values("platform_name")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:8]
     )
 
     unresolved_count = api_failures.count()
     if unresolved_count == 0:
-        service_status = ('green', 'Operativo')
+        service_status = ("green", "Operativo")
     elif unresolved_count <= 3:
-        service_status = ('yellow', 'Con incidencias')
+        service_status = ("yellow", "Con incidencias")
     else:
-        service_status = ('red', 'Degradado')
+        service_status = ("red", "Degradado")
 
     context = {
-        'user': user,
-        'window': window,
-        'user_languages': user_languages,
-        'genre_metrics': genre_metrics,
-        'platform_metrics': platform_metrics,
-        'service_status': service_status,
-        'unresolved_api_failures': unresolved_count,
-        'recent_api_failures': api_failures.order_by('-last_seen')[:10],
-        'favorite_total': favorites_qs.count(),
-        'interaction_total': interactions.count(),
+        "user": user,
+        "window": window,
+        "user_languages": user_languages,
+        "genre_metrics": genre_metrics,
+        "platform_metrics": platform_metrics,
+        "service_status": service_status,
+        "unresolved_api_failures": unresolved_count,
+        "recent_api_failures": api_failures.order_by("-last_seen")[:10],
+        "favorite_total": favorites_qs.count(),
+        "interaction_total": interactions.count(),
     }
-    return render(request, 'web/dashboard.html', context)
+    return render(request, "web/dashboard.html", context)
 
 
 def dashboard_export_csv(request, dataset):
@@ -650,25 +869,79 @@ def dashboard_export_csv(request, dataset):
     if redirect_response:
         return redirect_response
     if not _is_internal_user(request, user):
-        return redirect('home')
+        return redirect("home")
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="{dataset}.csv"'
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="{dataset}.csv"'
     writer = csv.writer(response)
 
-    if dataset == 'favorites':
-        writer.writerow(['user_name', 'content_type', 'content_id', 'title', 'genre', 'platform_name', 'created_at'])
-        for item in FavoriteContent.objects.select_related('user').order_by('-created_at'):
-            writer.writerow([item.user.user_name, item.content_type, item.content_id, item.title, item.genre, item.platform_name, item.created_at.isoformat()])
+    if dataset == "favorites":
+        writer.writerow(
+            [
+                "user_name",
+                "content_type",
+                "content_id",
+                "title",
+                "genre",
+                "platform_name",
+                "created_at",
+            ]
+        )
+        for item in FavoriteContent.objects.select_related("user").order_by(
+            "-created_at"
+        ):
+            writer.writerow(
+                [
+                    item.user.user_name,
+                    item.content_type,
+                    item.content_id,
+                    item.title,
+                    item.genre,
+                    item.platform_name,
+                    item.created_at.isoformat(),
+                ]
+            )
         return response
 
-    if dataset == 'interactions':
-        writer.writerow(['user_name', 'interaction_type', 'content_type', 'content_id', 'title', 'genre', 'platform_name', 'timestamp'])
-        for item in ContentInteraction.objects.select_related('user').order_by('-timestamp'):
-            writer.writerow([item.user.user_name, item.interaction_type, item.content_type, item.content_id, item.title, item.genre, item.platform_name, item.timestamp.isoformat()])
+    if dataset == "interactions":
+        writer.writerow(
+            [
+                "user_name",
+                "interaction_type",
+                "content_type",
+                "content_id",
+                "title",
+                "genre",
+                "platform_name",
+                "timestamp",
+            ]
+        )
+        for item in ContentInteraction.objects.select_related("user").order_by(
+            "-timestamp"
+        ):
+            writer.writerow(
+                [
+                    item.user.user_name,
+                    item.interaction_type,
+                    item.content_type,
+                    item.content_id,
+                    item.title,
+                    item.genre,
+                    item.platform_name,
+                    item.timestamp.isoformat(),
+                ]
+            )
         return response
 
-    writer.writerow(['user_name', 'language', 'age', 'rank', 'is_active'])
-    for profile in InfoUser.objects.select_related('user').order_by('user__user_name'):
-        writer.writerow([profile.user.user_name, profile.language, profile.age, profile.user.rank, profile.user.is_active])
+    writer.writerow(["user_name", "language", "age", "rank", "is_active"])
+    for profile in InfoUser.objects.select_related("user").order_by("user__user_name"):
+        writer.writerow(
+            [
+                profile.user.user_name,
+                profile.language,
+                profile.age,
+                profile.user.rank,
+                profile.user.is_active,
+            ]
+        )
     return response

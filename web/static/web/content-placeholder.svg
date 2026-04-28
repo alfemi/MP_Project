@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 720" role="img" aria-labelledby="title desc">
+  <title id="title">Placeholder de contenido</title>
+  <desc id="desc">Poster genérico para contenido sin imagen disponible.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2f241d" />
+      <stop offset="100%" stop-color="#120f0d" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f2992e" stop-opacity=".55" />
+      <stop offset="100%" stop-color="#f2992e" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="480" height="720" fill="url(#bg)" rx="36" />
+  <circle cx="378" cy="126" r="168" fill="url(#glow)" />
+  <rect x="72" y="86" width="336" height="548" rx="28" fill="none" stroke="rgba(255,255,255,.16)" />
+  <path d="M152 262h176v176H152z" fill="none" stroke="#f8f2eb" stroke-width="20" stroke-linejoin="round" />
+  <path d="M168 422l58-68 46 50 32-36 24 26" fill="none" stroke="#f2992e" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="308" cy="312" r="24" fill="#f2992e" />
+  <text x="240" y="514" fill="#f8f2eb" font-family="Lexend, Arial, sans-serif" font-size="38" font-weight="700" text-anchor="middle">StreamSync</text>
+  <text x="240" y="560" fill="rgba(248,242,235,.78)" font-family="Arial, sans-serif" font-size="24" text-anchor="middle">Imagen no disponible</text>
+</svg>

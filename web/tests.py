@@ -209,6 +209,54 @@ class MovieImageOverrideIntegrationTest(TestCase):
         self.assertContains(response, 'No Image')
         self.assertEqual(movie['image_source'], 'placeholder')
 
+    def test_home_uses_title_search_image_when_api_has_no_image(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[{
+            'id': 89,
+            'title': 'Search Poster',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+        }]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]), patch('web.image_resolver.ExternalTitleImageSearchService.search_movie_image', return_value='https://example.com/search-image.jpg'):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        movie = response.context['movies'][0]
+        self.assertEqual(movie['image_url'], 'https://example.com/search-image.jpg')
+        self.assertEqual(movie['image_source'], 'search')
+
+    def test_home_builds_absolute_url_from_relative_image_path(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[{
+            'id': 91,
+            'title': 'Relative Poster',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+            '_api_base_url': 'http://localhost:8081',
+            'poster_url': '/media/posters/relative.jpg',
+        }]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        movie = response.context['movies'][0]
+        self.assertEqual(movie['image_url'], 'http://localhost:8081/media/posters/relative.jpg')
+        self.assertEqual(movie['image_source'], 'external')
+
+    def test_home_builds_tmdb_url_from_poster_path(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[{
+            'id': 92,
+            'title': 'TMDB Poster',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+            'poster_path': '/abc123poster.jpg',
+        }]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        movie = response.context['movies'][0]
+        self.assertEqual(movie['image_url'], 'https://image.tmdb.org/t/p/w500/abc123poster.jpg')
+        self.assertEqual(movie['image_source'], 'external')
+
 
 class ContentDetailAndFavoritesTest(TestCase):
     def setUp(self):
@@ -281,6 +329,82 @@ class ContentDetailAndFavoritesTest(TestCase):
         response = self.client.get(reverse('favorites'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Arrival')
+
+
+class ProfileFlowTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = FunctionalUser.objects.create(
+            user_name='profile_user',
+            email='profile@example.com',
+            password=make_password('StrongPassword123!'),
+            rank='final-user',
+        )
+        self.info = InfoUser.objects.create(
+            user=self.user,
+            address='Old address',
+            language='es',
+            age=27,
+            sex='female',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        session = self.client.session
+        session['user_id'] = self.user.id
+        session.save()
+
+    def test_profile_requires_authentication(self):
+        anon_client = Client()
+        response = anon_client.get(reverse('profile'))
+        self.assertRedirects(response, reverse('login'))
+
+    def test_profile_page_loads(self):
+        response = self.client.get(reverse('profile'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Perfil de profile_user')
+        self.assertContains(response, 'profile@example.com')
+
+    def test_profile_update_uses_django_form_validation(self):
+        response = self.client.post(
+            reverse('profile'),
+            {
+                'action': 'update_profile',
+                'email': 'updated@example.com',
+                'address': 'New address',
+                'language': 'ca',
+                'age': '31',
+                'sex': 'female',
+                'preferences': ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi'],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.info.refresh_from_db()
+        self.assertEqual(self.user.email, 'updated@example.com')
+        self.assertEqual(self.info.language, 'ca')
+        self.assertEqual(self.info.age, 31)
+        self.assertContains(response, 'Perfil actualizado correctamente.')
+
+    def test_profile_password_change_updates_password_hash(self):
+        response = self.client.post(
+            reverse('profile'),
+            {
+                'action': 'change_password',
+                'old_password': 'StrongPassword123!',
+                'new_password': 'EvenStrongerPassword456!',
+                'confirm_password': 'EvenStrongerPassword456!',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(check_password('EvenStrongerPassword456!', self.user.password))
+        self.assertContains(response, 'Contraseña actualizada correctamente.')
+
+    def test_logout_clears_session_and_redirects(self):
+        response = self.client.get(reverse('logout'))
+        self.assertRedirects(response, reverse('login'))
+        self.assertNotIn('user_id', self.client.session)
 
 
 class ApiFailureObservabilityTest(TestCase):

@@ -1,110 +1,138 @@
 {% extends 'web/base.html' %}
 
+{% block body_class %}app-surface profile-page{% endblock %}
+{% block main_class %}container-wide{% endblock %}
+
 {% block content %}
-<div class="profile-container" style="max-width: 800px; margin: 2rem auto;">
-    <div class="profile-header" style="text-align: center; margin-bottom: 3rem;">
-        <h2 style="font-size: 2.8rem; color: var(--text-color);">Mi Perfil 👤</h2>
-        <p style="color: #888;">Gestiona tu información y seguridad</p>
-    </div>
+<section class="profile-shell">
+    <header class="profile-hero">
+        <div>
+            <span class="eyebrow">Cuenta</span>
+            <h1 class="section-title">Perfil de {{ user.user_name }}</h1>
+            <p class="section-description">Edita tus datos, preferencias y contraseña sin salir del flujo principal.</p>
+        </div>
+        <div class="profile-summary-card">
+            <span class="profile-summary-label">Email</span>
+            <strong>{{ user.email }}</strong>
+            <span class="profile-summary-meta">Idioma {{ info.get_language_display }} · {{ info.age }} años</span>
+        </div>
+    </header>
 
     {% if success %}
-        <div class="success-banner" style="background: rgba(46, 173, 92, 0.1); border-left: 5px solid #2EAD5C; padding: 1rem 1.5rem; border-radius: 10px; margin-bottom: 2rem; color: var(--text-color);">
-            <strong>✨ Éxito:</strong> {{ success }}
-        </div>
+    <div class="success-banner">
+        <strong>Guardado:</strong> {{ success }}
+    </div>
     {% endif %}
 
-    {% if error %}
-        <div class="error-banner">
-            <span class="error-icon">⚠️</span>
-            <div class="error-message">
-                <strong>Error:</strong> {{ error }}
+    <div class="profile-layout">
+        <section class="profile-panel profile-panel--personal">
+            <div class="profile-panel-header">
+                <span class="section-kicker">Información principal</span>
+                <h2>Datos personales</h2>
             </div>
-        </div>
-    {% endif %}
 
-    <div class="profile-sections-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-        <!-- Sección Información Personal -->
-        <div class="register-section">
-            <h3><span class="section-icon">📝</span> Datos Personales</h3>
             <form method="post" class="profile-form">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="update_info">
-                
-                <div class="input-group">
-                    <label>Nombre de usuario</label>
-                    <input type="text" value="{{ user.user_name }}" disabled style="opacity: 0.7; cursor: not-allowed;">
-                </div>
-                
-                <div class="input-group">
-                    <label>Correo electrónico</label>
-                    <input type="email" name="email" value="{{ user.email }}" required>
-                </div>
-                
-                <div class="input-group">
-                    <label>Dirección</label>
-                    <input type="text" name="address" value="{{ info.address }}" required>
-                </div>
-                
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+                <input type="hidden" name="action" value="update_profile">
+
+                <div class="profile-form-grid">
+                    <div class="input-group">
+                        <label>Nombre de usuario</label>
+                        <input type="text" value="{{ user.user_name }}" disabled>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Correo electrónico</label>
+                        {{ profile_form.email }}
+                        {% for error in profile_form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+
                     <div class="input-group">
                         <label>Idioma</label>
-                        <input type="text" name="language" value="{{ info.language }}" required>
+                        {{ profile_form.language }}
+                        {% for error in profile_form.language.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
+
                     <div class="input-group">
                         <label>Edad</label>
-                        <input type="number" name="age" value="{{ info.age }}" required min="12">
+                        {{ profile_form.age }}
+                        {% for error in profile_form.age.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div class="input-group">
+                        <label>Género</label>
+                        {{ profile_form.sex }}
+                        {% for error in profile_form.sex.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div class="input-group input-group--full">
+                        <label>Dirección</label>
+                        {{ profile_form.address }}
+                        {% for error in profile_form.address.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
                 </div>
-                
-                <div class="input-group">
-                    <label>Género</label>
-                    <select name="sex" required>
-                        <option value="male" {% if info.sex == 'male' %}selected{% endif %}>👨 Hombre</option>
-                        <option value="female" {% if info.sex == 'female' %}selected{% endif %}>👩 Mujer</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="cta-button" style="margin-top: 1.5rem; width: 100%;">Actualizar Datos</button>
-            </form>
-        </div>
 
-        <!-- Sección Seguridad -->
-        <div class="register-section">
-            <h3><span class="section-icon">🔒</span> Seguridad</h3>
+                <div class="profile-preferences-card">
+                    <div>
+                        <span class="section-kicker">Preferencias</span>
+                        <h3>Géneros favoritos</h3>
+                    </div>
+                    <div class="profile-preferences-grid">
+                        {{ profile_form.preferences }}
+                    </div>
+                    {% for error in profile_form.preferences.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+
+                <button type="submit" class="cta-button profile-submit">Guardar cambios</button>
+            </form>
+        </section>
+
+        <section class="profile-panel profile-panel--security">
+            <div class="profile-panel-header">
+                <span class="section-kicker">Seguridad</span>
+                <h2>Acceso y sesión</h2>
+            </div>
+
             <form method="post" class="profile-form">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="change_password">
-                
+
                 <div class="input-group">
                     <label>Contraseña actual</label>
-                    <input type="password" name="old_password" placeholder="••••••••" required>
+                    {{ password_form.old_password }}
+                    {% for error in password_form.old_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
-                
+
                 <div class="input-group">
                     <label>Nueva contraseña</label>
-                    <input type="password" name="new_password" placeholder="Mínimo 8 caracteres" required>
+                    {{ password_form.new_password }}
+                    {% for error in password_form.new_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
-                
+
                 <div class="input-group">
                     <label>Confirmar nueva contraseña</label>
-                    <input type="password" name="confirm_password" placeholder="••••••••" required>
+                    {{ password_form.confirm_password }}
+                    {% for error in password_form.confirm_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
-                
-                <button type="submit" class="cta-button" style="margin-top: 1.5rem; width: 100%; background: #666;">Cambiar Contraseña</button>
+
+                {% for error in password_form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+
+                <button type="submit" class="cta-button secondary profile-submit">Cambiar contraseña</button>
             </form>
 
-            <div class="danger-zone" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--banner-border); text-align: center;">
-                <a href="{% url 'logout' %}" class="cta-button" style="background: var(--error-color); text-decoration: none; display: inline-block; width: 100%;">Cerrar Sesión</a>
+            <div class="profile-side-card">
+                <span class="section-kicker">Estado</span>
+                <h3>Resumen de cuenta</h3>
+                <ul class="profile-meta-list">
+                    <li><strong>Usuario:</strong> {{ user.user_name }}</li>
+                    <li><strong>Email:</strong> {{ user.email }}</li>
+                    <li><strong>Idioma:</strong> {{ info.get_language_display }}</li>
+                    <li><strong>Edad:</strong> {{ info.age }}</li>
+                    <li><strong>Rol:</strong> {{ user.get_rank_display }}</li>
+                </ul>
+                <a href="{% url 'logout' %}" class="cta-button cta-button--danger profile-submit">Cerrar sesión</a>
             </div>
-        </div>
+        </section>
     </div>
-</div>
-
-<style>
-    @media (max-width: 768px) {
-        .profile-sections-grid {
-            grid-template-columns: 1fr !important;
-        }
-    }
-</style>
+</section>
 {% endblock %}

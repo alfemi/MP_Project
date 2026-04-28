@@ -1,4 +1,5 @@
 {% extends 'web/base.html' %}
+{% load static %}
 
 {% block body_class %}app-surface detail-page{% endblock %}
 {% block main_class %}container-wide{% endblock %}
@@ -28,7 +29,7 @@
     <div class="detail-grid">
         <div class="detail-media-panel">
             {% if content.image_url %}
-            <img src="{{ content.image_url }}" alt="{{ content.title }}" class="detail-poster">
+            <img src="{{ content.image_url }}" alt="{{ content.title }}" class="detail-poster" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
             {% else %}
             <div class="detail-poster detail-poster--placeholder">
                 <span class="placeholder-badge">No Image</span>
@@ -102,7 +103,7 @@
         <article class="recommendation-card">
             <div class="recommendation-card-media">
                 {% if item.image_url %}
-                <img src="{{ item.image_url }}" alt="{{ item.title }}" class="card-image">
+                <img src="{{ item.image_url }}" alt="{{ item.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
                 {% else %}
                 <div class="card-placeholder card-placeholder--compact">
                     <span class="placeholder-badge">No Image</span>
