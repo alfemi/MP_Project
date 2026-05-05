@@ -1,5 +1,6 @@
 import uuid
 
+from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
@@ -30,6 +31,12 @@ class FunctionalUser(models.Model):
     email = models.EmailField(unique=True)
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     email_verified = models.BooleanField(default=False)
+    groups = models.ManyToManyField(Group, blank=True, related_name="functional_users")
+    user_permissions = models.ManyToManyField(
+        Permission,
+        blank=True,
+        related_name="functional_users",
+    )
 
     RANK_CHOICES = [
         ('final-user', 'Usuario Final'),
@@ -65,6 +72,9 @@ class FunctionalUser(models.Model):
         verbose_name = "Usuario"
         verbose_name_plural = "Usuarios"
         ordering = ['-date_joined']
+        permissions = [
+            ("can_view_director_dashboard", "Can view director dashboard"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 Lower('user_name'),

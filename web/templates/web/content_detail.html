@@ -28,14 +28,7 @@
 
     <div class="detail-grid">
         <div class="detail-media-panel">
-            {% if content.image_url %}
-            <img src="{{ content.image_url }}" alt="{{ content.title }}" class="detail-poster" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
-            {% else %}
-            <div class="detail-poster detail-poster--placeholder">
-                <span class="placeholder-badge">No Image</span>
-                <strong>{{ content.title }}</strong>
-            </div>
-            {% endif %}
+            {% include "web/partials/content_image.html" with image_url=content.image_url title=content.title image_class="detail-poster" placeholder_class="detail-poster detail-poster--placeholder" only %}
             <div class="detail-image-note">Imagen {{ content.image_source|default:"placeholder"|title }}</div>
         </div>
 
@@ -71,6 +64,7 @@
                 <span class="cta-button ghost">Disponible en {{ content.platform_name|default:"plataforma externa" }}</span>
                 {% endif %}
 
+                {% if request.session.user_id %}
                 <form method="post" action="{% url 'toggle_favorite' content.content_type content.content_id %}">
                     {% csrf_token %}
                     <input type="hidden" name="title" value="{{ content.title }}">
@@ -79,10 +73,13 @@
                     <input type="hidden" name="platform_url" value="{{ content.platform_url }}">
                     <input type="hidden" name="image_url" value="{{ content.image_url }}">
                     <input type="hidden" name="next" value="{{ request.path }}">
-                    <button type="submit" class="cta-button secondary">
+                    <button type="submit" class="cta-button secondary" aria-label="{% if content.is_favorite %}Quitar {{ content.title }} de favoritos{% else %}Guardar {{ content.title }} en favoritos{% endif %}">
                         {% if content.is_favorite %}Quitar de favoritos{% else %}Guardar en favoritos{% endif %}
                     </button>
                 </form>
+                {% else %}
+                <a href="{% url 'login' %}" class="cta-button secondary">Inicia sessió per guardar</a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -102,20 +99,13 @@
         {% for item in content.recommendations %}
         <article class="recommendation-card">
             <div class="recommendation-card-media">
-                {% if item.image_url %}
-                <img src="{{ item.image_url }}" alt="{{ item.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
-                {% else %}
-                <div class="card-placeholder card-placeholder--compact">
-                    <span class="placeholder-badge">No Image</span>
-                    <strong>{{ item.title }}</strong>
-                </div>
-                {% endif %}
+                {% include "web/partials/content_image.html" with image_url=item.image_url title=item.title image_class="card-image" placeholder_class="card-placeholder card-placeholder--compact" only %}
             </div>
             <div class="recommendation-card-body">
                 <span class="content-badge">{{ item.genre_description|default:"General" }}</span>
                 <h3 class="content-card-title">{{ item.title }}</h3>
                 <p class="content-card-meta">{{ item.platform_name|default:"Plataforma externa" }}</p>
-                <a href="{% url 'content_detail' item.content_type item.content_id %}" class="cta-button cta-button--small">Abrir ficha</a>
+                <a href="{% url 'content_detail' item.content_type item.content_id %}" class="cta-button cta-button--small" aria-label="Abrir ficha de {{ item.title }}">Abrir ficha</a>
             </div>
         </article>
         {% endfor %}
@@ -123,8 +113,14 @@
     {% else %}
     <div class="empty-state empty-state--compact">
         <div class="empty-state-icon">✨</div>
+        {% if not request.session.user_id %}
+        <h3>Recomanacions personalitzades amb compte</h3>
+        <p>Inicia sessió per guardar favorits i obtenir recomanacions basades en les teves preferències.</p>
+        <a href="{% url 'login' %}" class="cta-button">Iniciar sessió</a>
+        {% else %}
         <h3>Todavía no hay recomendaciones suficientes</h3>
         <p>Cuando haya más coincidencias por género o preferencia, aparecerán aquí.</p>
+        {% endif %}
     </div>
     {% endif %}
 </section>

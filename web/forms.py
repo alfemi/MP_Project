@@ -21,6 +21,13 @@ class ProfileUpdateForm(forms.Form):
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
+        self.fields["email"].widget.attrs.update(
+            {"autocomplete": "email", "placeholder": "tu@email.com"}
+        )
+        self.fields["address"].widget.attrs.update(
+            {"autocomplete": "street-address", "placeholder": "Calle, número, ciudad"}
+        )
+        self.fields["age"].widget.attrs.update({"inputmode": "numeric"})
 
     def clean_email(self):
         email = normalize_email(self.cleaned_data["email"])
@@ -61,6 +68,13 @@ class PasswordChangeForm(forms.Form):
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
+        self.fields["old_password"].widget.attrs.update(
+            {"autocomplete": "current-password"}
+        )
+        self.fields["new_password"].widget.attrs.update({"autocomplete": "new-password"})
+        self.fields["confirm_password"].widget.attrs.update(
+            {"autocomplete": "new-password"}
+        )
 
     def clean_old_password(self):
         old_password = self.cleaned_data["old_password"]

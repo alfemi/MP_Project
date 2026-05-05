@@ -1,40 +1,50 @@
 {% extends 'web/base.html' %}
 
+{% block body_class %}auth-page{% endblock %}
+
 {% block content %}
-    <div class="login-container-wrapper" style="text-align: center; max-width: 450px; margin: 4rem auto;">
-        <div class="login-header" style="margin-bottom: 2.5rem;">
-            <h2 style="font-size: 2.8rem; margin-bottom: 0.5rem; color: var(--text-color);">Bienvenido 👋</h2>
-            <p style="color: #888; font-size: 1.1rem;">Inicia sesión para acceder a tu contenido unificado</p>
+    <div class="login-container-wrapper">
+        <div class="login-header">
+            <h1 class="auth-title">Bienvenido</h1>
+            <p class="auth-description">Inicia sesión para acceder a tu contenido unificado.</p>
         </div>
 
         <form method="post" class="login-form">
             {% csrf_token %}
+            {% if messages %}
+                {% for message in messages %}
+                <div class="error-banner" role="status">
+                    <div class="error-message">{{ message }}</div>
+                </div>
+                {% endfor %}
+            {% endif %}
             {% if error %}
-                <div class="error-banner" style="margin-bottom: 1.5rem;">
-                    <span class="error-icon">⚠️</span>
+                <div class="error-banner" role="alert">
                     <div class="error-message">
                         <strong>Error:</strong> {{ error }}
                     </div>
                 </div>
             {% endif %}
             
-            <div class="input-group" style="margin-bottom: 1.5rem; text-align: left;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nombre de usuario</label>
-                <input type="text" name="user_name" placeholder="Tu usuario" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color);">
+            <div class="input-group">
+                <label for="login_user_name">Nombre de usuario</label>
+                <input id="login_user_name" type="text" name="user_name" placeholder="Tu usuario" autocomplete="username" required>
             </div>
             
-            <div class="input-group" style="margin-bottom: 2rem; text-align: left;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contraseña</label>
-                <input type="password" name="password" placeholder="Tu contraseña" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color);">
+            <div class="input-group">
+                <label for="login_password">Contraseña</label>
+                <input id="login_password" type="password" name="password" placeholder="Tu contraseña" autocomplete="current-password" required>
             </div>
             
-            <button type="submit" class="cta-button submit-btn" style="width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; font-weight: 700;">
-                Entrar 🚀
-            </button>
+            <button type="submit" class="cta-button submit-btn">Entrar</button>
         </form>
+
+        <p class="register-link">
+            <a href="{% url 'catalog' %}" class="text-button">Veure catàleg sense registrar-se</a>
+        </p>
         
-        <p class="register-link" style="margin-top: 2rem; color: var(--text-color);">
-            ¿No tienes una cuenta? <a href="{% url 'register' %}" style="color: var(--banner-bg); font-weight: bold; text-decoration: none;">Regístrate aquí</a>
+        <p class="register-link">
+            ¿No tienes una cuenta? <a href="{% url 'register' %}">Regístrate aquí</a>
         </p>
     </div>
 {% endblock %}

@@ -21,6 +21,12 @@ urlpatterns = [
         name="toggle_favorite",
     ),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("directors/", views.director_dashboard, name="director_dashboard"),
+    path(
+        "directors/export.csv",
+        views.director_dashboard_export_csv,
+        name="director_dashboard_export_csv",
+    ),
     path(
         "dashboard/export/<str:dataset>/",
         views.dashboard_export_csv,

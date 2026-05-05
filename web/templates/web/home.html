@@ -7,19 +7,16 @@
 {% block content %}
 <div class="catalog-shell">
     <aside class="catalog-sidebar">
+        <details class="catalog-sidebar-details" open>
+            <summary class="catalog-sidebar-summary">
+                <span>Menú y filtros</span>
+                <span class="catalog-sidebar-summary-hint">Abrir / cerrar</span>
+            </summary>
         <div class="catalog-sidebar-panel">
-            <a href="{% url 'home' %}" class="catalog-sidebar-brand" aria-label="Ir al catálogo de StreamSync">
-                <img src="{% static 'web/logo.png' %}" alt="Logo de Stream Sync" class="catalog-sidebar-logo">
-                <div class="catalog-sidebar-brand-copy">
-                    <span class="catalog-sidebar-brand-name">Stream Sync</span>
-                    <span class="catalog-sidebar-brand-text">Catálogo unificado para descubrir películas y series con una vista clara.</span>
-                </div>
-            </a>
-
             <div class="catalog-sidebar-group">
                 <span class="catalog-sidebar-label">Navegación</span>
                 <nav class="catalog-sidebar-nav" aria-label="Navegación del catálogo">
-                    <a href="{% url 'home' %}" class="catalog-sidebar-link is-active">Inicio</a>
+                    <a href="{% url 'home' %}" class="catalog-sidebar-link is-active" aria-current="page">Inicio</a>
                     <a href="#movies-section" class="catalog-sidebar-link">Películas</a>
                     <a href="#series-section" class="catalog-sidebar-link">Series</a>
                     {% if request.session.user_id %}
@@ -56,14 +53,14 @@
 
                 <input type="hidden" name="type" value="{{ content_type }}">
 
-                <div class="catalog-type-switch" role="tablist" aria-label="Tipo de contenido">
+                <nav class="catalog-type-switch" aria-label="Tipo de contenido">
                     <a href="?type=all{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
-                       class="catalog-type-option {% if content_type == 'all' %}is-active{% endif %}">Todo</a>
+                       class="catalog-type-option {% if content_type == 'all' %}is-active{% endif %}" {% if content_type == 'all' %}aria-current="page"{% endif %}>Todo</a>
                     <a href="?type=movies{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
-                       class="catalog-type-option {% if content_type == 'movies' %}is-active{% endif %}">Películas</a>
+                       class="catalog-type-option {% if content_type == 'movies' %}is-active{% endif %}" {% if content_type == 'movies' %}aria-current="page"{% endif %}>Películas</a>
                     <a href="?type=series{% if search_query %}&title={{ search_query|urlencode }}{% endif %}{% if selected_genre %}&genre={{ selected_genre|urlencode }}{% endif %}{% if selected_director %}&director={{ selected_director|urlencode }}{% endif %}"
-                       class="catalog-type-option {% if content_type == 'series' %}is-active{% endif %}">Series</a>
-                </div>
+                       class="catalog-type-option {% if content_type == 'series' %}is-active{% endif %}" {% if content_type == 'series' %}aria-current="page"{% endif %}>Series</a>
+                </nav>
 
                 <label class="filter-field">
                     <span class="filter-label">Buscar</span>
@@ -96,18 +93,25 @@
                 </div>
             </form>
         </div>
+        </details>
     </aside>
 
     <section class="catalog-main">
         <header class="catalog-main-header">
-            <div>
+            <div class="catalog-hero-copy">
                 <span class="eyebrow">Discovery unificado</span>
                 <h1 class="catalog-main-title">Encuentra algo bueno para ver sin perder tiempo.</h1>
-                <p class="catalog-main-description">La navegación y los filtros quedan fijos a la izquierda para que el catálogo empiece antes y las tarjetas sean lo importante.</p>
+                <p class="catalog-main-description">Explora películas y series con filtros claros, lectura rápida y acceso directo a cada ficha.</p>
             </div>
             <div class="catalog-main-summary">
-                <span class="accent-chip">Películas {{ movies|length }}</span>
-                <span class="accent-chip">Series {{ series|length }}</span>
+                <div class="catalog-hero-stat">
+                    <strong>{{ movies|length }}</strong>
+                    <span>Películas</span>
+                </div>
+                <div class="catalog-hero-stat">
+                    <strong>{{ series|length }}</strong>
+                    <span>Series</span>
+                </div>
             </div>
         </header>
 
@@ -133,51 +137,7 @@
             {% if movies %}
             <div class="content-grid content-grid--catalog">
                 {% for movie in movies %}
-                <article class="content-card content-card--catalog {% if movie.is_blocked %}is-blocked{% endif %}">
-                    <div class="content-card-media content-card-media--poster">
-                        {% if movie.image_url %}
-                        <img src="{{ movie.image_url }}" alt="{{ movie.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
-                        {% else %}
-                        <div class="card-placeholder">
-                            <span class="placeholder-badge">No Image</span>
-                            <strong>{{ movie.title }}</strong>
-                            <small>{{ movie.director_name|default:"Director no disponible" }}</small>
-                        </div>
-                        {% endif %}
-
-                        {% if movie.is_favorite %}
-                        <span class="floating-badge">Favorito</span>
-                        {% endif %}
-                        {% if movie.image_source %}
-                        <span class="floating-badge floating-badge--source">{{ movie.image_source|title }}</span>
-                        {% endif %}
-
-                        {% if movie.is_blocked %}
-                        <div class="lock-overlay">
-                            <span class="lock-icon">🔒</span>
-                            <span class="lock-label">{{ movie.block_message }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="content-card-body">
-                        <div class="content-card-topline">
-                            <span class="content-badge">{{ movie.genre_description|default:"Contenido" }}</span>
-                            <span class="content-meta-inline">{{ movie.age_rating_label|default:"TP" }}</span>
-                        </div>
-                        <h3 class="content-card-title">{{ movie.title }}</h3>
-                        <p class="content-card-meta">
-                            <span>{{ movie.platform_name|default:"Plataforma externa" }}</span>
-                            <span>•</span>
-                            <span>{{ movie.director_name|default:"Director no disponible" }}</span>
-                        </p>
-                        <div class="content-card-actions">
-                            <a href="{% url 'content_detail' 'movie' movie.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
-                            {% if movie.rating %}
-                            <span class="metric-pill">★ {{ movie.rating }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </article>
+                {% include "web/partials/content_card.html" with item=movie content_kind="movie" only %}
                 {% endfor %}
             </div>
             {% else %}
@@ -204,51 +164,7 @@
             {% if series %}
             <div class="content-grid content-grid--catalog">
                 {% for serie in series %}
-                <article class="content-card content-card--catalog {% if serie.is_blocked %}is-blocked{% endif %}">
-                    <div class="content-card-media content-card-media--poster">
-                        {% if serie.image_url %}
-                        <img src="{{ serie.image_url }}" alt="{{ serie.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
-                        {% else %}
-                        <div class="card-placeholder">
-                            <span class="placeholder-badge">No Image</span>
-                            <strong>{{ serie.title }}</strong>
-                            <small>{{ serie.director_name|default:"Serie sin imagen" }}</small>
-                        </div>
-                        {% endif %}
-
-                        {% if serie.is_favorite %}
-                        <span class="floating-badge">Favorito</span>
-                        {% endif %}
-                        {% if serie.image_source %}
-                        <span class="floating-badge floating-badge--source">{{ serie.image_source|title }}</span>
-                        {% endif %}
-
-                        {% if serie.is_blocked %}
-                        <div class="lock-overlay">
-                            <span class="lock-icon">🔒</span>
-                            <span class="lock-label">{{ serie.block_message }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="content-card-body">
-                        <div class="content-card-topline">
-                            <span class="content-badge">{{ serie.genre_description|default:"Serie" }}</span>
-                            <span class="content-meta-inline">{{ serie.age_rating_label|default:"TP" }}</span>
-                        </div>
-                        <h3 class="content-card-title">{{ serie.title }}</h3>
-                        <p class="content-card-meta">
-                            <span>{{ serie.platform_name|default:"Plataforma externa" }}</span>
-                            <span>•</span>
-                            <span>{{ serie.director_name|default:"Director no disponible" }}</span>
-                        </p>
-                        <div class="content-card-actions">
-                            <a href="{% url 'content_detail' 'series' serie.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
-                            {% if serie.rating %}
-                            <span class="metric-pill">★ {{ serie.rating }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </article>
+                {% include "web/partials/content_card.html" with item=serie content_kind="series" only %}
                 {% endfor %}
             </div>
             {% else %}
@@ -264,4 +180,10 @@
         </section>
     </section>
 </div>
+<script>
+    const catalogSidebar = document.querySelector('.catalog-sidebar-details');
+    if (catalogSidebar && window.matchMedia('(max-width: 640px)').matches) {
+        catalogSidebar.removeAttribute('open');
+    }
+</script>
 {% endblock %}

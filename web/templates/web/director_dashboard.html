@@ -1,0 +1,338 @@
+{% extends 'web/base.html' %}
+
+{% block body_class %}app-surface director-page{% endblock %}
+{% block main_class %}container-wide{% endblock %}
+
+{% block content %}
+<section class="page-shell director-hero">
+    <div class="dashboard-header">
+        <div>
+            <span class="eyebrow">Panel directores</span>
+            <h1 class="section-title">Panel de direcció</h1>
+            <p class="section-description">Seguiment estratègic i rendiment de StreamSync a partir de dades agregades.</p>
+        </div>
+        <div class="director-status">
+            <span class="status-pill status-{{ data_status }}">{{ data_status_label }}</span>
+            <small>Generat: {{ generated_at|date:"d/m/Y H:i" }}</small>
+        </div>
+    </div>
+    <p class="director-source-note">{{ source_summary }}</p>
+</section>
+
+<section class="page-shell">
+    <form method="get" class="director-filter-bar" aria-label="Filtres del panel de direcció">
+        <label class="filter-field">
+            <span class="filter-label">Període</span>
+            <select name="period">
+                {% for option in period_options %}
+                <option value="{{ option.value }}" {% if option.value == period %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="filter-field">
+            <span class="filter-label">Objectiu informe</span>
+            <select name="objective">
+                {% for option in objective_options %}
+                <option value="{{ option.value }}" {% if option.value == objective %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div class="director-filter-actions">
+            <button type="submit" class="cta-button">Aplicar</button>
+            <a href="{% url 'director_dashboard_export_csv' %}?period={{ period }}&objective={{ objective }}" class="cta-button secondary">Exportar CSV</a>
+        </div>
+    </form>
+</section>
+
+<section class="page-shell">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">Indicadors executius</span>
+            <h2 class="section-title section-title--compact">Resum KPI</h2>
+        </div>
+    </div>
+    <div class="kpi-grid director-kpi-grid">
+        {% for card in kpi_cards %}
+        <article class="kpi-card director-kpi-card status-card-{{ card.status }}">
+            <strong>{{ card.label }}</strong>
+            <div class="kpi-value">{{ card.value }}</div>
+            <small>{{ card.note }}</small>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-shell director-chart-section">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">Demografia</span>
+            <h2 class="section-title section-title--compact">Gràfic demogràfic</h2>
+        </div>
+        <span class="status-pill status-{{ demographic_chart.status }}">{{ demographic_chart.status_label }}</span>
+    </div>
+    {% if demographic_chart.labels %}
+    <div class="director-chart-frame"><canvas id="demographic-chart"></canvas></div>
+    {% else %}
+    <div class="empty-state empty-state--compact">
+        <p>{{ demographic_chart.explanation }}</p>
+    </div>
+    {% endif %}
+</section>
+
+<section class="page-shell director-chart-section">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">Mercat i comportament</span>
+            <h2 class="section-title section-title--compact">Tendències de gèneres</h2>
+            <p class="section-description">{{ genre_chart.explanation }}</p>
+        </div>
+        <span class="status-pill status-{{ genre_chart.status }}">{{ genre_chart.status_label }}</span>
+    </div>
+    {% if genre_chart.labels %}
+    <div class="director-chart-frame"><canvas id="genre-chart"></canvas></div>
+    {% if genre_chart.temporal_labels %}
+    <div class="director-chart-frame"><canvas id="genre-trend-chart"></canvas></div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state empty-state--compact">
+        <p>{{ genre_chart.explanation }}</p>
+    </div>
+    {% endif %}
+</section>
+
+<section class="page-shell director-chart-section">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">B2B</span>
+            <h2 class="section-title section-title--compact">Quota de plataforma</h2>
+            <p class="section-description">{{ platform_chart.explanation }}</p>
+        </div>
+        <span class="status-pill status-{{ platform_chart.status }}">{{ platform_chart.status_label }}</span>
+    </div>
+    {% if platform_chart.labels %}
+    <div class="director-chart-frame"><canvas id="platform-chart"></canvas></div>
+    {% else %}
+    <div class="empty-state empty-state--compact">
+        <p>No disponible: no hi ha dades de subscripcions declarades.</p>
+    </div>
+    {% endif %}
+</section>
+
+<section class="page-shell">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">Operació</span>
+            <h2 class="section-title section-title--compact">Qualitat del catàleg</h2>
+            <p class="section-description">{{ catalog_quality_chart.explanation }}</p>
+        </div>
+        <span class="status-pill status-{{ quality_data.status }}">{{ quality_data.score }}%</span>
+    </div>
+    <div class="director-chart-frame"><canvas id="quality-chart"></canvas></div>
+    <div class="kpi-grid director-quality-grid">
+        {% for item in quality_data.items %}
+        <article class="mini-card"><strong>{{ item.value }}</strong><span>{{ item.label }}</span></article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-shell">
+    <h2 class="section-title section-title--compact">Top contingut</h2>
+    <div class="director-table-wrap">
+        <table class="director-table">
+            <thead>
+                <tr>
+                    <th>Títol</th>
+                    <th>Gènere</th>
+                    <th>Plataforma</th>
+                    <th>Rating</th>
+                    <th>Favorits</th>
+                    <th>Vistes</th>
+                    <th>Qualitat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in top_content_rows %}
+                <tr>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.genre }}</td>
+                    <td>{{ item.platform }}</td>
+                    <td>{% if item.rating %}{{ item.rating }}{% else %}N/D{% endif %}</td>
+                    <td>{{ item.favorite_count }}</td>
+                    <td>{{ item.view_count }}</td>
+                    <td>{{ item.quality_flags }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">No disponible: no hi ha contingut suficient per construir el rànquing.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="page-shell">
+    <div class="dashboard-header">
+        <div>
+            <span class="eyebrow">PUC 10</span>
+            <h2 class="section-title section-title--compact">Informe estratègic</h2>
+            <p class="section-description">{{ strategic_report.note }}</p>
+        </div>
+        <span class="status-pill status-{{ strategic_report.status }}">{{ strategic_report.objective_label }}</span>
+    </div>
+    <div class="director-report-grid">
+        <article class="mini-card">
+            <strong>Evidències detectades</strong>
+            {% for item in strategic_report.evidence %}<p>{{ item }}</p>{% endfor %}
+        </article>
+        <article class="mini-card">
+            <strong>Oportunitats</strong>
+            {% for item in strategic_report.opportunities %}<p>{{ item }}</p>{% endfor %}
+        </article>
+        <article class="mini-card">
+            <strong>Riscos</strong>
+            {% for item in strategic_report.risks %}<p>{{ item }}</p>{% endfor %}
+        </article>
+    </div>
+    <div class="table-like">
+        {% for scenario in strategic_report.scenarios %}
+        <div class="table-row"><span>Escenari {{ scenario.label }}</span><strong>{{ scenario.text }}</strong></div>
+        {% endfor %}
+    </div>
+    <p class="director-source-note">{{ strategic_report.technical_note }}</p>
+</section>
+
+<section class="page-shell">
+    <div class="dashboard-header">
+        <div>
+            <span class="eyebrow">PUC 12</span>
+            <h2 class="section-title section-title--compact">Informe periòdic de rendiment</h2>
+            <p class="section-description">Període: {{ periodic_report.period }} · Generat: {{ periodic_report.generated_at|date:"d/m/Y H:i" }}</p>
+        </div>
+        <span class="status-pill status-{{ periodic_report.status }}">{{ periodic_report.status_label }}</span>
+    </div>
+    <div class="kpi-grid director-quality-grid">
+        {% for item in periodic_report.summary %}
+        <article class="mini-card"><strong>{{ item.value }}</strong><span>{{ item.label }}</span></article>
+        {% endfor %}
+    </div>
+    <div class="table-like">
+        {% for warning in periodic_report.deviations %}
+        <div class="table-row"><span>Avís</span><strong>{{ warning }}</strong></div>
+        {% empty %}
+        <div class="table-row"><span>Avís</span><strong>Sense desviacions destacades amb les dades actuals.</strong></div>
+        {% endfor %}
+    </div>
+</section>
+
+{{ demographic_chart|json_script:"demographic-chart-data" }}
+{{ genre_chart|json_script:"genre-chart-data" }}
+{{ platform_chart|json_script:"platform-chart-data" }}
+{{ catalog_quality_chart|json_script:"quality-chart-data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    function readChartData(id) {
+        const node = document.getElementById(id);
+        return node ? JSON.parse(node.textContent) : null;
+    }
+
+    function renderBarChart(canvasId, data, label) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !data || !data.labels || !data.labels.length) {
+            return;
+        }
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label,
+                    data: data.values,
+                    backgroundColor: '#F2992E',
+                    borderColor: '#D96F18',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#181818',
+                        titleColor: '#f5f5f5',
+                        bodyColor: '#f5f5f5',
+                        borderColor: '#F2992E',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#b8b8b8' },
+                        grid: { color: 'rgba(255,255,255,0.06)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, color: '#b8b8b8' },
+                        grid: { color: 'rgba(255,255,255,0.08)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderLineChart(canvasId, data) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !data || !data.temporal_labels || !data.temporal_labels.length) {
+            return;
+        }
+        const colors = ['#F2992E', '#2EAD5C', '#EB5757', '#2F80ED', '#9B51E0'];
+        new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: data.temporal_labels,
+                datasets: data.temporal_datasets.map((dataset, index) => ({
+                    label: dataset.label,
+                    data: dataset.values,
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length],
+                    tension: 0.28
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#f5f5f5' }
+                    },
+                    tooltip: {
+                        backgroundColor: '#181818',
+                        titleColor: '#f5f5f5',
+                        bodyColor: '#f5f5f5',
+                        borderColor: '#F2992E',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#b8b8b8' },
+                        grid: { color: 'rgba(255,255,255,0.06)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, color: '#b8b8b8' },
+                        grid: { color: 'rgba(255,255,255,0.08)' }
+                    }
+                }
+            }
+        });
+    }
+
+    renderBarChart('demographic-chart', readChartData('demographic-chart-data'), 'Usuaris');
+    const genreData = readChartData('genre-chart-data');
+    renderBarChart('genre-chart', genreData, 'Interaccions / favorits');
+    renderLineChart('genre-trend-chart', genreData);
+    renderBarChart('platform-chart', readChartData('platform-chart-data'), 'Continguts');
+    renderBarChart('quality-chart', readChartData('quality-chart-data'), 'Elements');
+</script>
+{% endblock %}

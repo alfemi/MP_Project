@@ -1,16 +1,17 @@
 {% extends 'web/base.html' %}
 
+{% block body_class %}auth-page register-page{% endblock %}
+
 {% block content %}
-    <div class="register-header" style="text-align: center; margin-bottom: 2.5rem;">
-        <h2 style="font-size: 2.8rem; margin-bottom: 0.5rem; color: var(--text-color);">Crea tu cuenta 🎬</h2>
-        <p style="color: #888; font-size: 1.2rem;">Únete a Stream Sync y unifica todas tus plataformas en un solo lugar</p>
+    <div class="register-header">
+        <h1 class="auth-title">Crea tu cuenta</h1>
+        <p class="auth-description">Únete a StreamSync y unifica tus plataformas en un solo lugar.</p>
     </div>
 
     <form method="post" id="register-form" class="register-form">
         {% csrf_token %}
         {% if error %}
-            <div class="error-banner">
-                <span class="error-icon">⚠️</span>
+            <div class="error-banner" role="alert">
                 <div class="error-message">
                     <strong>Atención:</strong> {{ error }}
                 </div>
@@ -18,33 +19,33 @@
         {% endif %}
         
         <div class="register-section">
-            <h3><span class="section-icon">👤</span> Datos de Usuario</h3>
+            <h2>Datos de usuario</h2>
             <div class="form-grid">
                 <div class="input-group">
-                    <label>Nombre de usuario</label>
-                    <input type="text" name="user_name" placeholder="Ej: juan_perez" required value="{{ form_data.user_name|default:'' }}">
+                    <label for="register_user_name">Nombre de usuario</label>
+                    <input id="register_user_name" type="text" name="user_name" placeholder="Ej: juan_perez" autocomplete="username" required value="{{ form_data.user_name|default:'' }}">
                 </div>
                 <div class="input-group">
-                    <label>Correo electrónico</label>
-                    <input type="email" name="email" placeholder="Ej: juan@ejemplo.com" required value="{{ form_data.email|default:'' }}">
+                    <label for="register_email">Correo electrónico</label>
+                    <input id="register_email" type="email" name="email" placeholder="Ej: juan@ejemplo.com" autocomplete="email" required value="{{ form_data.email|default:'' }}">
                 </div>
                 <div class="input-group full-width">
-                    <label>Contraseña</label>
-                    <input type="password" name="password" placeholder="Mínimo 8 caracteres" required>
+                    <label for="register_password">Contraseña</label>
+                    <input id="register_password" type="password" name="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required>
                 </div>
             </div>
         </div>
         
         <div class="register-section">
-            <h3><span class="section-icon">📍</span> Información Personal</h3>
+            <h2>Información personal</h2>
             <div class="form-grid">
                 <div class="input-group full-width">
-                    <label>Dirección <small>(opcional)</small></label>
-                    <input type="text" name="address" placeholder="Calle, Número, Ciudad" value="{{ form_data.address|default:'' }}">
+                    <label for="register_address">Dirección <small>(opcional)</small></label>
+                    <input id="register_address" type="text" name="address" placeholder="Calle, número, ciudad" autocomplete="street-address" value="{{ form_data.address|default:'' }}">
                 </div>
                 <div class="input-group">
-                    <label>Idioma preferido</label>
-                    <select name="language" required>
+                    <label for="register_language">Idioma preferido</label>
+                    <select id="register_language" name="language" required>
                         <option value="" disabled {% if not form_data.language %}selected{% endif %}>Selecciona un idioma...</option>
                         {% for language_value, language_label in languages %}
                             <option value="{{ language_value }}" {% if form_data.language == language_value %}selected{% endif %}>{{ language_label }}</option>
@@ -52,12 +53,12 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <label>Edad</label>
-                    <input type="number" name="age" placeholder="Ej: 25" required min="13" max="120" value="{{ form_data.age|default:'' }}">
+                    <label for="register_age">Edad</label>
+                    <input id="register_age" type="number" name="age" placeholder="Ej: 25" required min="13" max="120" inputmode="numeric" value="{{ form_data.age|default:'' }}">
                 </div>
                 <div class="input-group full-width">
-                    <label for="sex">Género</label>
-                    <select name="sex" id="sex" required>
+                    <label for="register_sex">Género</label>
+                    <select name="sex" id="register_sex" required>
                         <option value="" disabled {% if not form_data.sex %}selected{% endif %}>Selecciona una opción...</option>
                         {% for sex_value, sex_label in sex_choices %}
                             <option value="{{ sex_value }}" {% if form_data.sex == sex_value %}selected{% endif %}>{{ sex_label }}</option>
@@ -68,8 +69,8 @@
         </div>
         
         <div class="register-section">
-            <h3><span class="section-icon">⭐</span> Tus Preferencias</h3>
-            <div class="genre-status">
+            <h2>Tus preferencias</h2>
+            <div class="genre-status" aria-live="polite">
                 <span class="genre-counter">Géneros seleccionados: <span id="checked-count">0</span> / 5</span>
                 <div class="progress-bar-container">
                     <div class="progress-bar" id="genre-progress"></div>
@@ -85,14 +86,19 @@
                     </label>
                 {% endfor %}
             </div>
-            <p id="genre-error" class="error-text" style="display: none;">❌ Debes seleccionar al menos 5 géneros para continuar.</p>
+            <p id="genre-error" class="field-error is-hidden" role="alert">Debes seleccionar al menos 5 géneros para continuar.</p>
         </div>
         
         <div class="form-footer">
+            <label class="terms-field" for="register_terms">
+                <input id="register_terms" type="checkbox" name="terms" value="1" required {% if form_data.terms %}checked{% endif %}>
+                <span>Acepto los términos de uso y la política de privacidad de StreamSync.</span>
+            </label>
             <button type="submit" class="cta-button submit-btn" id="register-submit">
-                Crear mi cuenta 🚀
+                Crear mi cuenta
             </button>
             <p class="login-link">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a></p>
+            <p class="login-link"><a href="{% url 'catalog' %}">Veure catàleg sense registrar-se</a></p>
         </div>
     </form>
 
@@ -114,7 +120,7 @@
                 
                 if (checkedCount >= 5) {
                     progressBar.style.backgroundColor = '#2EAD5C';
-                    errorMsg.style.display = 'none';
+                    errorMsg.classList.add('is-hidden');
                 } else {
                     progressBar.style.backgroundColor = '#F2C94C';
                 }
@@ -136,7 +142,7 @@
                 const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
                 if (checkedCount < 5) {
                     event.preventDefault();
-                    errorMsg.style.display = 'block';
+                    errorMsg.classList.remove('is-hidden');
                     errorMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             });

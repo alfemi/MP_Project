@@ -8,10 +8,10 @@
 <section class="favorites-hero">
     <div>
         <span class="eyebrow">Colección personal</span>
-        <h1 class="section-title">Mis favoritos</h1>
+        <h1 class="section-title">Les meves llistes</h1>
         <p class="section-description">
-            Guarda contenido relevante, vuelve a él rápidamente y mantén una lista
-            personal mucho más usable que una tabla técnica.
+            Llista de favorits amb traçabilitat d'altes i baixes. Les llistes
+            personalitzades queden disponibles per a una futura iteració.
         </p>
     </div>
     <a href="{% url 'home' %}" class="text-button">Seguir explorando</a>
@@ -19,33 +19,32 @@
 
 {% if favorites %}
 <section class="favorites-shell">
+    <div class="section-header">
+        <div>
+            <span class="section-kicker">Llista per defecte</span>
+            <h2 class="section-title section-title--compact">Llista de favorits</h2>
+        </div>
+    </div>
     <div class="favorites-grid">
         {% for favorite in favorites %}
         <article class="favorite-card">
             <div class="favorite-card-media">
-                {% if favorite.content_image_url %}
-                <img src="{{ favorite.content_image_url }}" alt="{{ favorite.title }}" class="card-image" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';">
-                {% else %}
-                <div class="card-placeholder card-placeholder--compact">
-                    <span class="placeholder-badge">No Image</span>
-                    <strong>{{ favorite.title }}</strong>
-                </div>
-                {% endif %}
+                {% include "web/partials/content_image.html" with image_url=favorite.content_image_url title=favorite.title image_class="card-image" placeholder_class="card-placeholder card-placeholder--compact" only %}
                 <span class="floating-badge">{{ favorite.content_type|title }}</span>
             </div>
             <div class="favorite-card-body">
                 <h2 class="content-card-title">{{ favorite.title }}</h2>
                 <p class="content-card-meta">
                     <span>{{ favorite.genre|default:"General" }}</span>
-                    <span>•</span>
+                    <span aria-hidden="true">·</span>
                     <span>{{ favorite.platform_name|default:"Plataforma pendiente" }}</span>
                 </p>
                 <div class="content-card-actions">
-                    <a href="{% url 'content_detail' favorite.content_type favorite.content_id %}" class="cta-button cta-button--small">Ver ficha</a>
+                    <a href="{% url 'content_detail' favorite.content_type favorite.content_id %}" class="cta-button cta-button--small" aria-label="Ver ficha de {{ favorite.title }}">Ver ficha</a>
                     <form method="post" action="{% url 'toggle_favorite' favorite.content_type favorite.content_id %}">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{% url 'favorites' %}">
-                        <button type="submit" class="cta-button secondary cta-button--small">Quitar</button>
+                        <button type="submit" class="cta-button secondary cta-button--small" aria-label="Quitar {{ favorite.title }} de favoritos">Quitar</button>
                     </form>
                 </div>
             </div>

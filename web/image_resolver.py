@@ -11,6 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 class ContentImageService:
+    INVALID_IMAGE_VALUES = {
+        'null',
+        'none',
+        'undefined',
+        'n/a',
+        'na',
+        'sin imagen',
+        'sense imatge',
+        'no image',
+        'not available',
+        '-',
+    }
     EXTERNAL_IMAGE_KEYS = (
         'image_url',
         'poster_url',
@@ -122,7 +134,7 @@ class ContentImageService:
             return ""
 
         candidate = value.strip()
-        if not candidate:
+        if not candidate or candidate.lower() in cls.INVALID_IMAGE_VALUES:
             return ""
 
         if candidate.startswith("//"):
@@ -130,11 +142,19 @@ class ContentImageService:
 
         parsed = urlparse(candidate)
         if parsed.scheme in {"http", "https"}:
+            if not parsed.netloc:
+                return ""
             return candidate
+        if parsed.scheme and parsed.scheme not in {"http", "https"}:
+            return ""
 
         if cls._looks_like_tmdb_path(candidate, source_key):
             return urljoin(cls.TMDB_IMAGE_BASE, candidate.lstrip("/"))
 
+        # External APIs are inconsistent: some omit images, some return relative
+        # paths, and some return protected or non-image URLs. Server-side
+        # normalization handles known good paths; templates still use onerror for
+        # URLs that fail only once the browser tries to load them.
         base_url = (item.get("_api_base_url") or settings.STREAM_APIS[0]["url"]).rstrip("/") + "/"
         return urljoin(base_url, candidate.lstrip("/"))
 

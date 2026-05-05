@@ -6,10 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stream Sync</title>
     <link rel="icon" type="image/x-icon" href="{% static 'web/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'web/style.css' %}?v=20260422-layoutfix3">
+    <link rel="stylesheet" href="{% static 'web/css/base.css' %}?v=20260429-final-2">
+    <link rel="stylesheet" href="{% static 'web/css/layout.css' %}?v=20260429-final-2">
+    <link rel="stylesheet" href="{% static 'web/css/layout.css' %}?v=20260429-logo-128">
+    <link rel="stylesheet" href="{% static 'web/css/forms.css' %}?v=20260429-final-2">
+    <link rel="stylesheet" href="{% static 'web/css/catalog.css' %}?v=20260429-final-2">
+    <link rel="stylesheet" href="{% static 'web/css/profile.css' %}?v=20260429-final-2">
+    <link rel="stylesheet" href="{% static 'web/css/accessibility.css' %}?v=20260429-final-2">
+    <link rel="stylesheet" href="{% static 'web/css/responsive.css' %}?v=20260429-final-2">
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body class="{% block body_class %}{% endblock %}">
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     <header class="app-banner">
         <div class="app-banner-inner">
             <a href="{% url 'home' %}" class="brand-link" aria-label="Ir al catálogo de StreamSync">
@@ -21,40 +29,51 @@
             </a>
 
             <div class="header-actions">
-                {% if request.session.user_id %}
                 <nav class="app-nav" aria-label="Navegación principal">
-                    <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'content_detail' %}is-active{% endif %}">Catálogo</a>
-                    <a href="{% url 'favorites' %}" class="{% if request.resolver_match.url_name == 'favorites' %}is-active{% endif %}">Favoritos</a>
+                    <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'content_detail' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'home' or request.resolver_match.url_name == 'content_detail' %}aria-current="page"{% endif %}>Catálogo</a>
+                    {% if not request.session.user_id and not request.user.is_authenticated %}
+                    <a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'login' %}aria-current="page"{% endif %}>Iniciar sessió</a>
+                    <a href="{% url 'register' %}" class="{% if request.resolver_match.url_name == 'register' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'register' %}aria-current="page"{% endif %}>Registrar-se</a>
+                    {% endif %}
+                    {% if request.session.user_id %}
+                    <a href="{% url 'favorites' %}" class="{% if request.resolver_match.url_name == 'favorites' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'favorites' %}aria-current="page"{% endif %}>Favoritos</a>
+                    {% endif %}
+                    {% if can_access_director_dashboard %}
+                    <a href="{% url 'director_dashboard' %}" class="{% if request.resolver_match.url_name == 'director_dashboard' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'director_dashboard' %}aria-current="page"{% endif %}>Panel directores</a>
+                    {% endif %}
                     {% if request.user.is_superuser %}
-                    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">Dashboard</a>
-                    {% elif user and user.rank == 'sysadmin' %}
-                    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}">Dashboard</a>
+                    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+                    {% elif functional_user and functional_user.rank == 'sysadmin' %}
+                    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
                     {% endif %}
                 </nav>
 
+                {% if request.session.user_id or request.user.is_authenticated %}
                 <details class="user-menu">
-                    <summary class="user-menu-trigger">
-                        <span class="user-menu-avatar">{{ user.user_name|default:"U"|first|upper }}</span>
+                    <summary class="user-menu-trigger" aria-label="Abrir menú de usuario">
+                        <span class="user-menu-avatar">{% if functional_user %}{{ functional_user.user_name|first|upper }}{% else %}{{ request.user.username|default:"U"|first|upper }}{% endif %}</span>
                         <span class="user-menu-copy">
-                            <strong>{{ user.user_name|default:"Cuenta" }}</strong>
-                            <small>{{ user.email|default:"Sesión activa" }}</small>
+                            <strong>{% if functional_user %}{{ functional_user.user_name }}{% else %}{{ request.user.username|default:"Cuenta" }}{% endif %}</strong>
+                            <small>{% if functional_user %}{{ functional_user.email }}{% else %}{{ request.user.email|default:"Sesión activa" }}{% endif %}</small>
                         </span>
                     </summary>
                     <div class="user-menu-panel">
-                        <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}">Perfil</a>
+                        {% if request.session.user_id %}
+                        <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}" {% if request.resolver_match.url_name == 'profile' %}aria-current="page"{% endif %}>Perfil</a>
+                        {% endif %}
                         <a href="{% url 'logout' %}">Cerrar sesión</a>
                     </div>
                 </details>
                 {% endif %}
 
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cambiar tema">
-                    <span id="theme-icon">🌙</span>
+                    <span id="theme-icon" aria-hidden="true">☾</span>
                     <span id="theme-text">Modo noche</span>
                 </button>
             </div>
         </div>
     </header>
-    <main class="container {% block main_class %}{% endblock %}">
+    <main id="main-content" class="container {% block main_class %}{% endblock %}" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -65,25 +84,28 @@
         const themeText = document.getElementById('theme-text');
         const userMenus = document.querySelectorAll('.user-menu');
 
-        // Check for saved theme preference
+        // Check for saved theme preference. Dark StreamSync is the default theme.
         const currentTheme = localStorage.getItem('theme');
-        if (currentTheme === 'dark') {
-            body.classList.add('dark-mode');
+        if (currentTheme === 'light') {
+            body.classList.add('light-mode');
+            updateToggleUI(false);
+        } else {
             updateToggleUI(true);
         }
 
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
-                body.classList.toggle('dark-mode');
-                const isDark = body.classList.contains('dark-mode');
+                body.classList.toggle('light-mode');
+                const isDark = !body.classList.contains('light-mode');
                 localStorage.setItem('theme', isDark ? 'dark' : 'light');
                 updateToggleUI(isDark);
             });
         }
 
         function updateToggleUI(isDark) {
-            themeIcon.textContent = isDark ? '☀️' : '🌙';
+            themeIcon.textContent = isDark ? '☀' : '☾';
             themeText.textContent = isDark ? 'Modo claro' : 'Modo noche';
+            themeToggle.setAttribute('aria-pressed', isDark ? 'true' : 'false');
         }
 
         document.addEventListener('click', (event) => {

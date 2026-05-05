@@ -1,0 +1,166 @@
+/* Base */
+:root {
+    --font-display: 'Lexend', system-ui, sans-serif;
+    --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    --ss-bg: #0f0f0f;
+    --ss-surface: #181818;
+    --ss-surface-2: #222222;
+    --ss-card: #1b1b1b;
+    --ss-border: #333333;
+    --ss-text: #f5f5f5;
+    --ss-muted: #b8b8b8;
+    --ss-muted-2: #8f8f8f;
+    --ss-orange: #F2992E;
+    --ss-orange-strong: #ff9900;
+    --ss-orange-hover: #ffb347;
+    --ss-danger: #EB5757;
+    --ss-warning: #F2C94C;
+    --ss-success: #2EAD5C;
+    --ss-focus: #ffbf5f;
+
+    --bg-color: var(--ss-bg);
+    --surface-color: var(--ss-surface);
+    --surface-muted: var(--ss-card);
+    --surface-soft: var(--ss-surface-2);
+    --surface-dark: #080808;
+    --text-color: var(--ss-text);
+    --text-muted: var(--ss-muted);
+    --text-soft: var(--ss-muted-2);
+    --border-color: var(--ss-border);
+    --input-bg: #121212;
+    --input-border: #3f3f3f;
+    --cta-bg: var(--ss-orange-strong);
+    --cta-hover: var(--ss-orange-hover);
+    --cta-text: #101010;
+    --danger-color: var(--ss-danger);
+    --success-color: var(--ss-success);
+    --warning-color: var(--ss-warning);
+    --info-color: var(--ss-orange);
+    --focus-ring: var(--ss-focus);
+    --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.34);
+    --shadow-strong: 0 22px 58px rgba(0, 0, 0, 0.58);
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --container-max: 1240px;
+}
+
+body.dark-mode {
+    --bg-color: var(--ss-bg);
+    --surface-color: var(--ss-surface);
+    --surface-muted: var(--ss-card);
+    --surface-soft: var(--ss-surface-2);
+    --surface-dark: #080808;
+    --text-color: var(--ss-text);
+    --text-muted: var(--ss-muted);
+    --text-soft: var(--ss-muted-2);
+    --border-color: var(--ss-border);
+    --input-bg: #121212;
+    --input-border: #3f3f3f;
+    --cta-bg: var(--ss-orange-strong);
+    --cta-hover: var(--ss-orange-hover);
+    --cta-text: #101010;
+    --danger-color: var(--ss-danger);
+    --success-color: var(--ss-success);
+    --warning-color: var(--ss-warning);
+    --info-color: var(--ss-orange);
+    --focus-ring: var(--ss-focus);
+    --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.34);
+    --shadow-strong: 0 22px 58px rgba(0, 0, 0, 0.58);
+}
+
+body.light-mode {
+    --bg-color: #f4f5f7;
+    --surface-color: #ffffff;
+    --surface-muted: #f8fafc;
+    --surface-soft: #eef1f5;
+    --surface-dark: #171a21;
+    --text-color: #16191f;
+    --text-muted: #566070;
+    --text-soft: #737d8c;
+    --border-color: #d9dee7;
+    --input-bg: #ffffff;
+    --input-border: #c8d0dc;
+    --cta-bg: #d96f18;
+    --cta-hover: #b95e14;
+    --cta-text: #ffffff;
+    --danger-color: #b42318;
+    --success-color: #177245;
+    --warning-color: #a15c00;
+    --info-color: #155e75;
+    --focus-ring: #0f6f8f;
+    --shadow-soft: 0 10px 28px rgba(22, 25, 31, 0.08);
+    --shadow-strong: 0 18px 44px rgba(22, 25, 31, 0.14);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    overflow-x: clip;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 10% -10%, color-mix(in srgb, var(--cta-bg) 10%, transparent), transparent 34%),
+        linear-gradient(180deg, #111 0%, var(--bg-color) 42%);
+    color: var(--text-color);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    overflow-x: clip;
+}
+
+body.light-mode {
+    background: var(--bg-color);
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+a {
+    color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    touch-action: manipulation;
+}
+
+h1,
+h2,
+h3,
+h4,
+.brand-name,
+.section-title,
+.catalog-main-title,
+.detail-title,
+.auth-title {
+    font-family: var(--font-display);
+    letter-spacing: 0;
+}
+
+p {
+    margin-top: 0;
+}
+
+
+::selection {
+    background: color-mix(in srgb, var(--cta-bg) 34%, transparent);
+    color: var(--text-color);
+}

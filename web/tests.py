@@ -1,14 +1,30 @@
+import json
+from pathlib import Path
+
 import requests
 from django.contrib.auth import get_user_model
 from unittest.mock import Mock, patch
 
+from django.contrib.auth.models import Group, Permission
 from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from .models import ApiFailureEvent, ContentInteraction, FavoriteContent, FailedLoginAttempt, FunctionalUser, InfoUser, MovieImageOverride
+from .image_resolver import ContentImageService
 from .services import StreamApiService
+
+
+class UserStoryCoverageFileTest(TestCase):
+    def test_user_story_coverage_file_exists(self):
+        coverage_path = Path(__file__).resolve().parent.parent / 'USER_STORY_COVERAGE.md'
+        self.assertTrue(coverage_path.exists())
+        content = coverage_path.read_text()
+        self.assertIn('IE10.1', content)
+        self.assertIn('IPR12.1', content)
+        self.assertIn('R4.5', content)
 
 
 class RegistrationValidationTest(TestCase):
@@ -24,6 +40,7 @@ class RegistrationValidationTest(TestCase):
             'age': '25',
             'sex': 'male',
             'genres': ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi'],
+            'terms': '1',
         }
 
     def test_registration_with_less_than_5_genres_fails(self):
@@ -79,6 +96,15 @@ class RegistrationValidationTest(TestCase):
         self.assertIn('csrftoken', response.cookies)
         self.assertIn('no-cache', response.headers.get('Cache-Control', ''))
 
+    def test_registration_requires_terms_acceptance(self):
+        payload = self.valid_payload.copy()
+        payload.pop('terms')
+        response = self.client.post(self.register_url, payload)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Debes aceptar los términos')
+        self.assertFalse(FunctionalUser.objects.filter(user_name='testuser_ok').exists())
+
 
 class LoginSecurityTest(TestCase):
     def setUp(self):
@@ -130,6 +156,148 @@ class LoginSecurityTest(TestCase):
         self.assertContains(response, 'csrfmiddlewaretoken')
         self.assertIn('csrftoken', response.cookies)
         self.assertIn('no-cache', response.headers.get('Cache-Control', ''))
+
+
+class PublicCatalogAccessTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.catalog_url = reverse('catalog')
+        self.genres = [('Action', 'Acción'), ('Drama', 'Drama')]
+        self.directors = [('1', 'Christopher Nolan')]
+        self.movie = {
+            'id': 501,
+            'title': 'Public Movie',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 5,
+            'image_url': 'https://example.com/public-movie.jpg',
+        }
+
+    def get_catalog_response(self, movies=None, series=None):
+        with patch(
+            'web.views.StreamApiService.get_movies',
+            return_value=movies if movies is not None else [self.movie],
+        ), patch(
+            'web.views.StreamApiService.get_series',
+            return_value=series if series is not None else [],
+        ), patch(
+            'web.views.StreamApiService.get_genres',
+            return_value=self.genres,
+        ), patch(
+            'web.views.StreamApiService.get_directors',
+            return_value=self.directors,
+        ):
+            return self.client.get(self.catalog_url)
+
+    def test_anonymous_user_can_access_public_catalog(self):
+        response = self.get_catalog_response(movies=[], series=[])
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/home.html')
+
+    def test_anonymous_user_can_access_home_catalog(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[]), patch('web.views.StreamApiService.get_directors', return_value=[]):
+            response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'web/home.html')
+
+    def test_anonymous_user_can_see_movies(self):
+        response = self.get_catalog_response()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Public Movie')
+        self.assertEqual(len(response.context['movies']), 1)
+
+    def test_anonymous_user_can_search_and_filter_catalog(self):
+        response = self.get_catalog_response()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['search_query'], '')
+        with patch('web.views.StreamApiService.get_movies', return_value=[self.movie]) as get_movies, patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=self.genres), patch('web.views.StreamApiService.get_directors', return_value=self.directors):
+            filtered = self.client.get(self.catalog_url, {'title': 'Public', 'genre': 'Action', 'director': '1', 'type': 'movies'})
+
+        self.assertEqual(filtered.status_code, 200)
+        get_movies.assert_called_with({'genre': 'Action', 'director': '1', 'title': 'Public'})
+        self.assertEqual(filtered.context['search_query'], 'Public')
+
+    def test_anonymous_navbar_shows_public_links_only(self):
+        response = self.get_catalog_response(movies=[], series=[])
+
+        self.assertContains(response, 'Iniciar sessió')
+        self.assertContains(response, 'Registrar-se')
+        self.assertNotContains(response, 'Favoritos')
+        self.assertNotContains(response, 'Perfil')
+        self.assertNotContains(response, 'Panel directores')
+
+    def test_anonymous_user_can_access_content_detail(self):
+        with patch('web.views.StreamApiService.get_content_detail', return_value={
+            'id': 501,
+            'title': 'Public Movie',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+            'image_url': 'https://example.com/public-movie.jpg',
+            'platform_name': 'Netflix',
+        }), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            response = self.client.get(reverse('content_detail', args=['movie', '501']))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Public Movie')
+        self.assertContains(response, 'Inicia sessió per guardar')
+
+    def test_anonymous_catalog_uses_safe_info_user_fallbacks(self):
+        response = self.get_catalog_response()
+
+        self.assertIsNone(response.context['user'])
+        self.assertIsNone(response.context['user_age'])
+        self.assertEqual(response.context['user_language'], '')
+        self.assertEqual(response.context['user_preferences'], [])
+        self.assertFalse(response.context['movies'][0]['is_blocked'])
+
+    def test_authenticated_catalog_keeps_personalized_profile_data(self):
+        user = FunctionalUser.objects.create(
+            user_name='cataloguser',
+            email='catalog@example.com',
+            password=make_password('StrongPassword123!'),
+            rank='final-user',
+        )
+        InfoUser.objects.create(
+            user=user,
+            address='',
+            language='ca',
+            age=13,
+            sex='female',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        session = self.client.session
+        session['user_id'] = user.id
+        session.save()
+
+        response = self.get_catalog_response()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['user'], user)
+        self.assertEqual(response.context['user_age'], 13)
+        self.assertEqual(response.context['user_language'], 'ca')
+        self.assertEqual(
+            response.context['user_preferences'],
+            ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi'],
+        )
+        self.assertTrue(response.context['movies'][0]['is_blocked'])
+
+    def test_anonymous_private_actions_redirect_or_block(self):
+        favorite_response = self.client.post(reverse('toggle_favorite', args=['movie', '501']), {'next': reverse('favorites')})
+        favorites_response = self.client.get(reverse('favorites'))
+        profile_response = self.client.get(reverse('profile'))
+        director_response = self.client.get(reverse('director_dashboard'))
+        export_response = self.client.get(reverse('director_dashboard_export_csv'))
+
+        self.assertRedirects(favorite_response, reverse('login'))
+        self.assertRedirects(favorites_response, reverse('login'))
+        self.assertRedirects(profile_response, reverse('login'))
+        self.assertRedirects(director_response, reverse('login'))
+        self.assertRedirects(export_response, reverse('login'))
 
 
 class MovieImageOverrideIntegrationTest(TestCase):
@@ -256,6 +424,32 @@ class MovieImageOverrideIntegrationTest(TestCase):
         movie = response.context['movies'][0]
         self.assertEqual(movie['image_url'], 'https://image.tmdb.org/t/p/w500/abc123poster.jpg')
         self.assertEqual(movie['image_source'], 'external')
+
+    def test_invalid_image_values_fall_back_to_placeholder(self):
+        with patch('web.image_resolver.ExternalTitleImageSearchService.search_movie_image', return_value=''):
+            for invalid_value in ['null', 'none', 'undefined', 'n/a', 'sin imagen', 'ftp://example.com/poster.jpg']:
+                with self.subTest(invalid_value=invalid_value):
+                    image_data = ContentImageService.resolve_image(
+                        {'id': 700, 'title': 'Bad Image', 'image_url': invalid_value},
+                        {},
+                    )
+                    self.assertEqual(image_data['url'], '')
+                    self.assertEqual(image_data['source'], 'placeholder')
+
+    def test_catalog_card_keeps_button_and_adds_card_hitbox(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[{
+            'id': 93,
+            'title': 'Clickable Card',
+            'director_id': 1,
+            'genre_id': 'Action',
+            'age_rating_id': 1,
+        }]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.views.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            response = self.client.get(reverse('home'))
+
+        detail_url = reverse('content_detail', args=['movie', '93'])
+        self.assertContains(response, 'content-card-hitbox')
+        self.assertContains(response, f'href="{detail_url}" class="content-card-hitbox"')
+        self.assertContains(response, 'Ver ficha')
 
 
 class ContentDetailAndFavoritesTest(TestCase):
@@ -554,6 +748,214 @@ class AdminSmokeTest(TestCase):
         for obj, url_name in objects_and_urls:
             response = self.client.get(reverse(url_name, args=[obj.pk]))
             self.assertEqual(response.status_code, 200, msg=f'Admin change view failed: {url_name}')
+
+
+class DirectorDashboardAccessTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.permission = Permission.objects.get(
+            codename='can_view_director_dashboard',
+            content_type=ContentType.objects.get_for_model(FunctionalUser),
+        )
+        self.directors_group = Group.objects.get(name='Directors')
+        self.normal_user = self.create_functional_user('normal_director_test')
+        self.director_user = self.create_functional_user('director_test')
+        self.permission_user = self.create_functional_user('permission_director_test')
+        self.permission_group_user = self.create_functional_user('permission_group_director_test')
+        self.internal_user = self.create_functional_user('internal_director_test', rank='sysadmin')
+        self.permission_group = Group.objects.create(name='Strategic Reporting')
+        self.permission_group.permissions.add(self.permission)
+        self.director_user.groups.add(self.directors_group)
+        self.permission_user.user_permissions.add(self.permission)
+        self.permission_group_user.groups.add(self.permission_group)
+
+    def create_functional_user(self, user_name, rank='final-user'):
+        user = FunctionalUser.objects.create(
+            user_name=user_name,
+            email=f'{user_name}@example.com',
+            password=make_password('StrongPassword123!'),
+            rank=rank,
+        )
+        InfoUser.objects.create(
+            user=user,
+            address='',
+            language='es',
+            age=30,
+            sex='male',
+            preferences='Action,Comedy,Drama,Horror,Sci-Fi',
+        )
+        return user
+
+    def login_functional_user(self, user):
+        session = self.client.session
+        session['user_id'] = user.id
+        session.save()
+
+    def get_director_response(self, client=None, movies=None, series=None):
+        active_client = client or self.client
+        with patch('web.analytics.StreamApiService.get_movies', return_value=movies if movies is not None else []), patch('web.analytics.StreamApiService.get_series', return_value=series if series is not None else []), patch('web.analytics.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.analytics.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            return active_client.get(reverse('director_dashboard'))
+
+    def get_director_export_response(self, client=None, movies=None, series=None):
+        active_client = client or self.client
+        with patch('web.analytics.StreamApiService.get_movies', return_value=movies if movies is not None else []), patch('web.analytics.StreamApiService.get_series', return_value=series if series is not None else []), patch('web.analytics.StreamApiService.get_genres', return_value=[('Action', 'Acción')]), patch('web.analytics.StreamApiService.get_directors', return_value=[('1', 'Christopher Nolan')]):
+            return active_client.get(reverse('director_dashboard_export_csv'))
+
+    def test_directors_group_is_created_with_permission(self):
+        self.assertTrue(self.directors_group.permissions.filter(pk=self.permission.pk).exists())
+        self.assertFalse(self.normal_user.groups.filter(name='Directors').exists())
+        self.assertFalse(
+            self.normal_user.user_permissions.filter(codename='can_view_director_dashboard').exists()
+        )
+
+    def test_anonymous_director_dashboard_redirects_to_login(self):
+        response = self.get_director_response()
+        self.assertRedirects(response, reverse('login'))
+
+    def test_normal_user_cannot_access_director_dashboard(self):
+        self.login_functional_user(self.normal_user)
+        response = self.get_director_response()
+        self.assertEqual(response.status_code, 403)
+        self.assertNotContains(response, 'KPIs del catálogo', status_code=403)
+
+    def test_normal_user_cannot_access_director_export(self):
+        self.login_functional_user(self.normal_user)
+        response = self.get_director_export_response()
+        self.assertEqual(response.status_code, 403)
+
+    def test_directors_group_user_can_access_director_dashboard(self):
+        self.login_functional_user(self.director_user)
+        response = self.get_director_response(movies=[{
+            'id': 1,
+            'title': 'Director Movie',
+            'genre_id': 'Action',
+            'director_id': 1,
+            'rating': 8.4,
+            'platform_name': 'Netflix',
+            'platform_url': 'https://example.com/watch',
+            'image_url': 'https://example.com/poster.jpg',
+        }])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Panel de direcció')
+        self.assertContains(response, 'Director Movie')
+        self.assertContains(response, 'Informe estratègic')
+        self.assertContains(response, 'Informe periòdic de rendiment')
+
+    def test_directors_group_user_can_access_without_group_permission(self):
+        self.directors_group.permissions.remove(self.permission)
+        self.login_functional_user(self.director_user)
+        response = self.get_director_response()
+        self.assertEqual(response.status_code, 200)
+
+    def test_permission_user_can_access_director_dashboard(self):
+        self.login_functional_user(self.permission_user)
+        response = self.get_director_response()
+        self.assertEqual(response.status_code, 200)
+
+    def test_director_user_can_access_csv_export_without_private_fields(self):
+        self.login_functional_user(self.director_user)
+        response = self.get_director_export_response(movies=[{
+            'id': 22,
+            'title': 'CSV Movie',
+            'genre_id': 'Action',
+            'director_id': 1,
+            'platform_name': 'Netflix',
+        }])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        body = response.content.decode()
+        self.assertIn('dimension,label,count,period,source,status', body)
+        self.assertIn('CSV Movie', body)
+        self.assertNotIn('email', body.lower())
+        self.assertNotIn('password', body.lower())
+        self.assertNotIn('address', body.lower())
+
+    def test_user_in_group_with_director_permission_can_access_dashboard(self):
+        self.login_functional_user(self.permission_group_user)
+        response = self.get_director_response()
+        self.assertEqual(response.status_code, 200)
+
+    def test_internal_functional_user_can_access_director_dashboard(self):
+        self.login_functional_user(self.internal_user)
+        response = self.get_director_response()
+        self.assertEqual(response.status_code, 200)
+
+    def test_django_superuser_can_access_director_dashboard(self):
+        super_client = Client()
+        admin_user = get_user_model().objects.create_superuser(
+            username='director_admin',
+            email='director-admin@example.com',
+            password='AdminPassword123!',
+        )
+        super_client.force_login(admin_user)
+        response = self.get_director_response(client=super_client)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Panel directores')
+
+    def test_director_dashboard_handles_empty_catalog(self):
+        self.login_functional_user(self.director_user)
+        response = self.get_director_response(movies=[], series=[])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Catàleg total')
+        self.assertContains(response, 'No disponible: el perfil d&#x27;usuari encara no registra nacionalitat o país/regió')
+        self.assertContains(response, 'No disponible: no hi ha dades de subscripcions declarades')
+        self.assertContains(response, 'Informe estratègic')
+        self.assertContains(response, 'Informe periòdic de rendiment')
+
+    def test_director_dashboard_chart_json_is_valid(self):
+        self.login_functional_user(self.director_user)
+        FavoriteContent.objects.create(
+            user=self.director_user,
+            content_type='movie',
+            content_id='1',
+            title='Favorite Movie',
+            genre='Action',
+            platform_name='Netflix',
+        )
+        ContentInteraction.objects.create(
+            user=self.director_user,
+            content_type='movie',
+            content_id='1',
+            interaction_type='view',
+            title='Favorite Movie',
+            genre='Action',
+            platform_name='Netflix',
+        )
+        response = self.get_director_response(movies=[{
+            'id': 1,
+            'title': 'Favorite Movie',
+            'genre_id': 'Action',
+            'director_id': 1,
+            'rating': 7.5,
+            'platform_name': 'Netflix',
+            'platform_url': 'https://example.com/watch',
+            'image_url': 'https://example.com/poster.jpg',
+        }])
+        self.assertEqual(response.status_code, 200)
+        for script_id in [
+            'demographic-chart-data',
+            'genre-chart-data',
+            'platform-chart-data',
+            'quality-chart-data',
+        ]:
+            self.assertContains(response, f'id="{script_id}"')
+        genre_data = json.loads(json.dumps(response.context['genre_chart']))
+        self.assertEqual(genre_data['labels'], ['Action'])
+        self.assertEqual(genre_data['values'], [1])
+        self.assertContains(response, 'Distribució del catàleg per proveïdor, no subscripcions d&#x27;usuari.')
+        self.assertContains(response, 'Tendència temporal')
+
+    def test_director_nav_visibility_follows_access(self):
+        with patch('web.views.StreamApiService.get_movies', return_value=[]), patch('web.views.StreamApiService.get_series', return_value=[]), patch('web.views.StreamApiService.get_genres', return_value=[]), patch('web.views.StreamApiService.get_directors', return_value=[]):
+            self.login_functional_user(self.normal_user)
+            normal_response = self.client.get(reverse('home'))
+            self.assertFalse(normal_response.context['can_access_director_dashboard'])
+            self.assertNotContains(normal_response, 'Panel directores')
+
+            self.login_functional_user(self.director_user)
+            director_response = self.client.get(reverse('home'))
+            self.assertTrue(director_response.context['can_access_director_dashboard'])
+            self.assertContains(director_response, 'Panel directores')
 
 
 class DashboardAndExportTest(TestCase):

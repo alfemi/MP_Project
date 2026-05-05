@@ -1,0 +1,419 @@
+/* Responsive */
+@media (min-width: 1700px) {
+    .content-grid--catalog {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 26px;
+    }
+}
+
+@media (max-width: 1320px) {
+    .content-grid--catalog {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1120px) {
+    .catalog-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .catalog-sidebar {
+        position: static;
+    }
+
+    .catalog-sidebar-panel {
+        max-height: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .catalog-sidebar-filters {
+        grid-column: 1 / -1;
+    }
+
+    .catalog-sidebar-nav {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .catalog-sidebar-link {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .catalog-main-header,
+    .detail-grid,
+    .profile-hero-card,
+    .profile-layout,
+    .director-filter-bar,
+    .director-report-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .catalog-main-header {
+        display: grid;
+        min-height: 260px;
+    }
+
+    .detail-media-panel {
+        position: static;
+        max-width: 520px;
+    }
+
+    .profile-panel--preferences {
+        grid-column: auto;
+    }
+
+    .genre-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .app-banner-inner,
+    .header-actions {
+        flex-wrap: wrap;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .app-nav {
+        order: 3;
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .catalog-page .container.catalog-main-frame {
+        padding: 18px 16px 60px;
+    }
+
+    .container {
+        padding: 24px 16px 60px;
+    }
+
+    .content-grid--catalog {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .catalog-sidebar-panel {
+        grid-template-columns: 1fr;
+        padding: 24px;
+    }
+
+    .catalog-sidebar-group--stats {
+        display: none;
+    }
+
+    .catalog-sidebar-nav {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .catalog-sidebar-link {
+        flex: 0 0 auto;
+        min-width: max-content;
+    }
+
+    .catalog-sidebar-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .catalog-sidebar-filters .catalog-sidebar-group,
+    .catalog-sidebar-filters .catalog-type-switch,
+    .catalog-sidebar-actions {
+        grid-column: 1 / -1;
+    }
+
+    .catalog-main-header,
+    .content-section-panel,
+    .detail-shell,
+    .recommendation-shell,
+    .favorites-shell,
+    .page-shell,
+    .register-form,
+    .login-form,
+    .profile-panel {
+        padding: 18px;
+    }
+
+    .catalog-main-header {
+        padding: 30px;
+    }
+
+    .section-header,
+    .favorites-hero,
+    .dashboard-header,
+    .status-banner,
+    .meta-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+
+    .director-status {
+        justify-items: start;
+    }
+
+    .favorites-grid,
+    .recommendation-grid,
+    .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .app-banner-inner {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .app-banner {
+        padding: 12px 16px;
+    }
+
+    .app-logo {
+        width: 56px;
+        height: 56px;
+    }
+
+    .brand-name {
+        font-size: 1.4rem;
+    }
+
+    .brand-tagline {
+        display: none;
+    }
+
+    .user-menu-copy {
+        display: none;
+    }
+
+    .header-actions {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .app-nav {
+        grid-column: 1 / -1;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .app-nav a {
+        flex: 1 0 auto;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .theme-toggle {
+        padding: 0 10px;
+    }
+
+    .theme-toggle #theme-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .catalog-main-title,
+    .detail-title {
+        max-width: 100%;
+        font-size: clamp(2rem, 9vw, 2.35rem);
+    }
+
+    .catalog-main-header {
+        min-height: 280px;
+        padding: 28px 20px;
+        max-width: 100%;
+    }
+
+    .catalog-main-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .catalog-hero-stat {
+        min-height: 96px;
+        padding: 16px;
+    }
+
+    .catalog-sidebar-details > summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 48px;
+        padding: 0 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--surface-color);
+        box-shadow: var(--shadow-soft);
+        color: var(--text-color);
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .catalog-sidebar-summary-hint {
+        color: var(--text-soft);
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .catalog-sidebar-details[open] > summary {
+        margin-bottom: 10px;
+    }
+
+    .catalog-sidebar .catalog-sidebar-group:first-of-type {
+        display: none;
+    }
+
+    .catalog-sidebar-filters,
+    .form-grid,
+    .profile-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .catalog-type-switch {
+        grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    }
+
+    .content-grid--catalog {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .content-card-body {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .content-card-topline {
+        display: grid;
+        justify-items: start;
+        gap: 6px;
+    }
+
+    .content-card-title {
+        min-height: 2.3em;
+        font-size: 0.92rem;
+    }
+
+    .content-card-meta {
+        font-size: 0.78rem;
+    }
+
+    .content-card-actions {
+        display: grid;
+        gap: 8px;
+    }
+
+    .content-card-actions .cta-button,
+    .content-card-actions .metric-pill {
+        width: 100%;
+    }
+
+    .floating-badge--source {
+        display: none;
+    }
+
+    .favorites-grid,
+    .recommendation-grid,
+    .kpi-grid,
+    .genre-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-hero-card {
+        min-height: auto;
+        padding: 22px;
+        max-width: 100%;
+    }
+
+    .profile-hero-main {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr);
+        align-items: start;
+        width: 100%;
+    }
+
+    .profile-hero-main .section-title,
+    .profile-hero-main .section-description,
+    .profile-summary-card strong {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .profile-avatar {
+        width: 76px;
+        height: 76px;
+        font-size: 1.9rem;
+    }
+
+    .profile-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendation-card {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendation-card-media {
+        aspect-ratio: 16 / 10;
+    }
+
+    .detail-actions,
+    .card-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .detail-actions .cta-button,
+    .card-actions .cta-button,
+    .detail-actions form {
+        width: 100%;
+    }
+
+    .login-container-wrapper {
+        margin: 2rem auto;
+    }
+}
+
+@media (max-width: 390px) {
+    .container-wide {
+        max-width: calc(100vw - 12px);
+    }
+
+    .catalog-page .container.catalog-main-frame,
+    .container {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .content-grid--catalog {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .catalog-type-switch {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 340px) {
+    .brand-copy {
+        display: none;
+    }
+
+    .content-grid--catalog {
+        grid-template-columns: 1fr;
+    }
+}

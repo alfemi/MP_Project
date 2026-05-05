@@ -1,0 +1,40 @@
+{% load static %}
+
+<article class="content-card content-card--catalog {% if item.is_blocked %}is-blocked{% endif %}">
+    <a href="{% url 'content_detail' content_kind item.content_id %}" class="content-card-hitbox" aria-label="Ver ficha de {{ item.title }}"></a>
+    <div class="content-card-media content-card-media--poster">
+        {% include "web/partials/content_image.html" with image_url=item.image_url title=item.title subtitle=item.director_name|default:"Información no disponible" image_class="card-image" placeholder_class="card-placeholder" only %}
+
+        {% if item.is_favorite %}
+        <span class="floating-badge">Favorito</span>
+        {% endif %}
+        {% if item.image_source %}
+        <span class="floating-badge floating-badge--source">{{ item.image_source|title }}</span>
+        {% endif %}
+
+        {% if item.is_blocked %}
+        <div class="lock-overlay" aria-label="{{ item.block_message }}">
+            <span class="lock-icon" aria-hidden="true">Bloqueado</span>
+            <span class="lock-label">{{ item.block_message }}</span>
+        </div>
+        {% endif %}
+    </div>
+    <div class="content-card-body">
+        <div class="content-card-topline">
+            <span class="content-badge">{{ item.genre_description|default:"Contenido" }}</span>
+            <span class="content-meta-inline">{{ item.age_rating_label|default:"TP" }}</span>
+        </div>
+        <h3 class="content-card-title">{{ item.title }}</h3>
+        <p class="content-card-meta">
+            <span>{{ item.platform_name|default:"Plataforma externa" }}</span>
+            <span aria-hidden="true">·</span>
+            <span>{{ item.director_name|default:"Director no disponible" }}</span>
+        </p>
+        <div class="content-card-actions">
+            <a href="{% url 'content_detail' content_kind item.content_id %}" class="cta-button cta-button--small" aria-label="Ver ficha de {{ item.title }}">Ver ficha</a>
+            {% if item.rating %}
+            <span class="metric-pill" aria-label="Puntuación {{ item.rating }}">★ {{ item.rating }}</span>
+            {% endif %}
+        </div>
+    </div>
+</article>

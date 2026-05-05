@@ -5,30 +5,42 @@
 
 {% block content %}
 <section class="profile-shell">
-    <header class="profile-hero">
-        <div>
+    <header class="profile-hero-card">
+        <div class="profile-hero-main">
+            <div class="profile-avatar" aria-hidden="true">{{ user.user_name|default:"U"|first|upper }}</div>
+            <div>
             <span class="eyebrow">Cuenta</span>
             <h1 class="section-title">Perfil de {{ user.user_name }}</h1>
             <p class="section-description">Edita tus datos, preferencias y contraseña sin salir del flujo principal.</p>
+            </div>
         </div>
-        <div class="profile-summary-card">
-            <span class="profile-summary-label">Email</span>
-            <strong>{{ user.email }}</strong>
-            <span class="profile-summary-meta">Idioma {{ info.get_language_display }} · {{ info.age }} años</span>
+        <div class="profile-summary-grid" aria-label="Resumen de cuenta">
+            <div class="profile-summary-card">
+                <span class="profile-summary-label">Email</span>
+                <strong>{{ user.email }}</strong>
+            </div>
+            <div class="profile-summary-card">
+                <span class="profile-summary-label">Idioma</span>
+                <strong>{{ info.get_language_display }}</strong>
+            </div>
+            <div class="profile-summary-card">
+                <span class="profile-summary-label">Edad</span>
+                <strong>{{ info.age }} años</strong>
+            </div>
         </div>
     </header>
 
     {% if success %}
-    <div class="success-banner">
+    <div class="success-banner" role="status">
         <strong>Guardado:</strong> {{ success }}
     </div>
     {% endif %}
 
     <div class="profile-layout">
-        <section class="profile-panel profile-panel--personal">
+        <section class="profile-panel profile-panel--personal" aria-labelledby="profile-personal-title">
             <div class="profile-panel-header">
                 <span class="section-kicker">Información principal</span>
-                <h2>Datos personales</h2>
+                <h2 id="profile-personal-title">Datos personales</h2>
             </div>
 
             <form method="post" class="profile-form">
@@ -37,60 +49,69 @@
 
                 <div class="profile-form-grid">
                     <div class="input-group">
-                        <label>Nombre de usuario</label>
-                        <input type="text" value="{{ user.user_name }}" disabled>
+                        <label for="profile_user_name">Nombre de usuario</label>
+                        <input id="profile_user_name" type="text" value="{{ user.user_name }}" disabled>
                     </div>
 
                     <div class="input-group">
-                        <label>Correo electrónico</label>
+                        {{ profile_form.email.label_tag }}
                         {{ profile_form.email }}
                         {% for error in profile_form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
 
                     <div class="input-group">
-                        <label>Idioma</label>
+                        {{ profile_form.language.label_tag }}
                         {{ profile_form.language }}
                         {% for error in profile_form.language.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
 
                     <div class="input-group">
-                        <label>Edad</label>
+                        {{ profile_form.age.label_tag }}
                         {{ profile_form.age }}
                         {% for error in profile_form.age.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
 
                     <div class="input-group">
-                        <label>Género</label>
+                        {{ profile_form.sex.label_tag }}
                         {{ profile_form.sex }}
                         {% for error in profile_form.sex.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
 
                     <div class="input-group input-group--full">
-                        <label>Dirección</label>
+                        {{ profile_form.address.label_tag }}
                         {{ profile_form.address }}
                         {% for error in profile_form.address.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                     </div>
-                </div>
-
-                <div class="profile-preferences-card">
-                    <div>
-                        <span class="section-kicker">Preferencias</span>
-                        <h3>Géneros favoritos</h3>
-                    </div>
-                    <div class="profile-preferences-grid">
-                        {{ profile_form.preferences }}
-                    </div>
-                    {% for error in profile_form.preferences.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
 
                 <button type="submit" class="cta-button profile-submit">Guardar cambios</button>
             </form>
         </section>
 
-        <section class="profile-panel profile-panel--security">
+        <section class="profile-panel profile-panel--preferences" aria-labelledby="profile-preferences-title">
+            <div class="profile-panel-header">
+                <span class="section-kicker">Preferencias</span>
+                <h2 id="profile-preferences-title">Géneros favoritos</h2>
+                <p class="section-description">Selecciona al menos cinco géneros para mantener recomendaciones útiles.</p>
+            </div>
+
+            <form method="post" class="profile-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_preferences">
+
+                <div class="profile-preferences-grid">
+                    {{ profile_form.preferences }}
+                </div>
+                {% for error in profile_form.preferences.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+
+                <button type="submit" class="cta-button profile-submit">Guardar preferencias</button>
+            </form>
+        </section>
+
+        <section class="profile-panel profile-panel--security" aria-labelledby="profile-security-title">
             <div class="profile-panel-header">
                 <span class="section-kicker">Seguridad</span>
-                <h2>Acceso y sesión</h2>
+                <h2 id="profile-security-title">Contraseña</h2>
             </div>
 
             <form method="post" class="profile-form">
@@ -98,19 +119,19 @@
                 <input type="hidden" name="action" value="change_password">
 
                 <div class="input-group">
-                    <label>Contraseña actual</label>
+                    {{ password_form.old_password.label_tag }}
                     {{ password_form.old_password }}
                     {% for error in password_form.old_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
 
                 <div class="input-group">
-                    <label>Nueva contraseña</label>
+                    {{ password_form.new_password.label_tag }}
                     {{ password_form.new_password }}
                     {% for error in password_form.new_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
 
                 <div class="input-group">
-                    <label>Confirmar nueva contraseña</label>
+                    {{ password_form.confirm_password.label_tag }}
                     {{ password_form.confirm_password }}
                     {% for error in password_form.confirm_password.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
@@ -119,19 +140,21 @@
 
                 <button type="submit" class="cta-button secondary profile-submit">Cambiar contraseña</button>
             </form>
+        </section>
 
-            <div class="profile-side-card">
-                <span class="section-kicker">Estado</span>
-                <h3>Resumen de cuenta</h3>
-                <ul class="profile-meta-list">
-                    <li><strong>Usuario:</strong> {{ user.user_name }}</li>
-                    <li><strong>Email:</strong> {{ user.email }}</li>
-                    <li><strong>Idioma:</strong> {{ info.get_language_display }}</li>
-                    <li><strong>Edad:</strong> {{ info.age }}</li>
-                    <li><strong>Rol:</strong> {{ user.get_rank_display }}</li>
-                </ul>
-                <a href="{% url 'logout' %}" class="cta-button cta-button--danger profile-submit">Cerrar sesión</a>
+        <section class="profile-panel profile-panel--session" aria-labelledby="profile-session-title">
+            <div class="profile-panel-header">
+                <span class="section-kicker">Sesión</span>
+                <h2 id="profile-session-title">Acciones de cuenta</h2>
             </div>
+            <ul class="profile-meta-list">
+                <li><strong>Usuario:</strong> {{ user.user_name }}</li>
+                <li><strong>Email:</strong> {{ user.email }}</li>
+                <li><strong>Idioma:</strong> {{ info.get_language_display }}</li>
+                <li><strong>Edad:</strong> {{ info.age }}</li>
+                <li><strong>Rol:</strong> {{ user.get_rank_display }}</li>
+            </ul>
+            <a href="{% url 'logout' %}" class="cta-button cta-button--danger profile-submit">Cerrar sesión</a>
         </section>
     </div>
 </section>

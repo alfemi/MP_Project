@@ -87,6 +87,7 @@ class FunctionalUserAdmin(admin.ModelAdmin):
     ordering = ('-date_joined',)
     actions = [activate_users, deactivate_users]
     inlines = [InfoUserInline]
+    filter_horizontal = ('groups', 'user_permissions')
 
     fieldsets = (
         ("Identitat", {
@@ -94,6 +95,13 @@ class FunctionalUserAdmin(admin.ModelAdmin):
         }),
         ("Rol i estat", {
             'fields': ('rank', 'is_active')
+        }),
+        ("Acceso", {
+            'fields': ('groups', 'user_permissions'),
+            'description': (
+                "Asigna el grupo Directors o el permiso web.can_view_director_dashboard "
+                "para dar acceso al panel de directores."
+            ),
         }),
         ("Auditoria", {
             'fields': ('date_joined', 'last_login'),

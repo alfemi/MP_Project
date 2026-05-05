@@ -2,9 +2,10 @@ import csv
 import logging
 from functools import wraps
 
+from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
@@ -14,6 +15,8 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 
+from .access import has_director_access
+from .analytics import build_director_export_rows, get_director_dashboard_context
 from .content_service import ContentCatalogService
 from .forms import PasswordChangeForm, ProfileUpdateForm
 from .image_resolver import ContentImageService
@@ -92,6 +95,7 @@ def _get_current_user(request):
 def _get_logged_in_user_or_redirect(request):
     user = _get_current_user(request)
     if not user:
+        messages.info(request, "Inicia sesión para acceder a esta acción.")
         return None, redirect("login")
     if not user.is_active:
         request.session.flush()
@@ -128,12 +132,16 @@ def _get_user_profile_or_redirect(request):
 
 
 def _parse_preferences(info_user):
+    if not info_user:
+        return []
     return InfoUser.parse_preferences(info_user.preferences)
 
 
 def _apply_age_gate(normalized_item, user_age, age_rating_id):
     min_age_required = AGE_RATING_MAP.get(age_rating_id or 1, 0)
-    normalized_item["is_blocked"] = user_age < min_age_required
+    normalized_item["is_blocked"] = (
+        user_age is not None and user_age < min_age_required
+    )
     if normalized_item["is_blocked"]:
         normalized_item["block_message"] = f"Contenido para +{min_age_required} años"
     return normalized_item
@@ -145,6 +153,7 @@ def _normalize_catalog_items(
     if not items or not isinstance(items, list):
         return []
 
+    user_age = info_user.age if info_user else None
     result = []
     for item in items:
         if not isinstance(item, dict):
@@ -158,7 +167,7 @@ def _normalize_catalog_items(
             overrides_map,
             AGE_RATING_MAP,
         )
-        _apply_age_gate(normalized, info_user.age, item.get("age_rating_id"))
+        _apply_age_gate(normalized, user_age, item.get("age_rating_id"))
         normalized["is_favorite"] = (item_type, normalized["content_id"]) in favorites
         result.append(normalized)
     return result
@@ -179,14 +188,21 @@ def _build_catalog_context(
     genre_dict = {str(gid): gname for gid, gname in genres_list}
     director_dict = {str(did): dname for did, dname in directors_list}
     overrides_map = ContentImageService.build_override_map([*movies, *series])
-    favorites = {
-        (favorite.content_type, favorite.content_id)
-        for favorite in FavoriteContent.objects.filter(user=user)
-    }
+    favorites = set()
+    if user:
+        favorites = {
+            (favorite.content_type, favorite.content_id)
+            for favorite in FavoriteContent.objects.filter(user=user)
+        }
+    user_age = info_user.age if info_user else None
+    user_language = info_user.language if info_user else ""
+    user_preferences = _parse_preferences(info_user)
 
     return {
         "user": user,
-        "user_age": info_user.age,
+        "user_age": user_age,
+        "user_language": user_language,
+        "user_preferences": user_preferences,
         "movies": _normalize_catalog_items(
             movies,
             "movie",
@@ -347,6 +363,19 @@ def _build_profile_forms(user, info_user, profile_data=None, password_data=None)
     }
 
 
+def _build_profile_section_data(action, post_data, user, info_user):
+    data = post_data.copy()
+    if action == "update_profile" and not data.getlist("preferences"):
+        data.setlist("preferences", InfoUser.parse_preferences(info_user.preferences))
+    if action == "update_preferences":
+        data["email"] = user.email
+        data["address"] = info_user.address
+        data["language"] = info_user.language
+        data["age"] = str(info_user.age)
+        data["sex"] = info_user.sex
+    return data
+
+
 # --- VISTES DE NAVEGACIÓ ---
 
 
@@ -380,7 +409,18 @@ def register(request):
             "age": age,
             "sex": sex,
             "genres": selected_genres,
+            "terms": request.POST.get("terms"),
         }
+
+        if not request.POST.get("terms"):
+            return render(
+                request,
+                "web/register.html",
+                _register_context(
+                    form_data,
+                    "Debes aceptar los términos para crear la cuenta.",
+                ),
+            )
 
         if not all([user_name, email, password, language, age, sex]):
             return render(
@@ -570,9 +610,13 @@ def catalog(request):
 
 
 def home(request):
-    user, info_user, redirect_response = _get_user_profile_or_redirect(request)
-    if redirect_response:
-        return redirect_response
+    user = _get_current_user(request)  # Optional user for guest catalog browsing
+    info_user = None
+    if user:
+        try:
+            info_user = InfoUser.objects.get(user=user)
+        except InfoUser.DoesNotExist:
+            pass
 
     selected_genre = request.GET.get("genre", "")
     selected_director = request.GET.get("director", "")
@@ -743,8 +787,9 @@ def profile(request):
     if request.method == "POST":
         action = request.POST.get("action")
 
-        if action == "update_profile":
-            forms_context = _build_profile_forms(user, info_user, profile_data=request.POST)
+        if action in {"update_profile", "update_preferences"}:
+            profile_data = _build_profile_section_data(action, request.POST, user, info_user)
+            forms_context = _build_profile_forms(user, info_user, profile_data=profile_data)
             profile_form = forms_context["profile_form"]
             password_form = forms_context["password_form"]
             if profile_form.is_valid():
@@ -753,7 +798,11 @@ def profile(request):
                 forms_context = _build_profile_forms(user, info_user)
                 profile_form = forms_context["profile_form"]
                 password_form = forms_context["password_form"]
-                success = "Perfil actualizado correctamente."
+                success = (
+                    "Preferencias actualizadas correctamente."
+                    if action == "update_preferences"
+                    else "Perfil actualizado correctamente."
+                )
             return render(
                 request,
                 "web/profile.html",
@@ -799,10 +848,47 @@ def profile(request):
     )
 
 
-@session_login_required
 def logout_view(request):
     request.session.flush()
     return redirect("login")
+
+
+def director_dashboard(request):
+    user, redirect_response = _get_logged_in_user_or_redirect(request)
+    if redirect_response and not getattr(request.user, "is_superuser", False):
+        return redirect_response
+    if not getattr(request.user, "is_superuser", False) and not user:
+        return redirect("login")
+    if not has_director_access(request, user):
+        raise PermissionDenied("No tienes permisos para acceder al panel de directores.")
+
+    return render(
+        request,
+        "web/director_dashboard.html",
+        get_director_dashboard_context(request.GET, user),
+    )
+
+
+def director_dashboard_export_csv(request):
+    user, redirect_response = _get_logged_in_user_or_redirect(request)
+    if redirect_response and not getattr(request.user, "is_superuser", False):
+        return redirect_response
+    if not getattr(request.user, "is_superuser", False) and not user:
+        return redirect("login")
+    if not has_director_access(request, user):
+        raise PermissionDenied("No tienes permisos para exportar datos del panel de directores.")
+
+    context = get_director_dashboard_context(request.GET, user)
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="director_dashboard.csv"'
+    writer = csv.DictWriter(
+        response,
+        fieldnames=["dimension", "label", "count", "period", "source", "status"],
+    )
+    writer.writeheader()
+    for row in build_director_export_rows(context):
+        writer.writerow(row)
+    return response
 
 
 def dashboard(request):
