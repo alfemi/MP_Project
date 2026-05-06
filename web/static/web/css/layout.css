@@ -13,7 +13,7 @@
 .catalog-page .container.catalog-main-frame {
     max-width: none;
     margin: 0;
-    padding: 24px 28px 72px;
+    padding: 18px 24px 64px;
 }
 
 .page-shell,
@@ -167,11 +167,21 @@
 }
 
 .app-banner {
-    padding: 16px 28px;
+    padding: 10px 22px;
 }
 
 .app-banner-inner {
-    min-height: 78px;
+    min-height: 58px;
+}
+
+.app-logo {
+    width: 88px;
+    height: 54px;
+}
+
+.brand-link {
+    gap: 12px;
+    padding: 5px 10px 5px 6px;
 }
 
 .brand-copy,
@@ -183,7 +193,7 @@
 
 .brand-name {
     color: #ffffff;
-    font-size: clamp(1.65rem, 1.2vw + 1.15rem, 2.2rem);
+    font-size: clamp(1.38rem, 0.85vw + 1rem, 1.8rem);
     font-weight: 900;
     line-height: 0.96;
     text-shadow: 0 2px 16px rgba(0, 0, 0, 0.48);
@@ -196,7 +206,7 @@
 .brand-tagline,
 .user-menu-copy small {
     color: color-mix(in srgb, var(--cta-bg) 36%, #d9dee7);
-    font-size: 0.86rem;
+    font-size: 0.78rem;
     font-weight: 700;
 }
 
@@ -221,7 +231,7 @@
 
 .app-nav {
     gap: 6px;
-    padding: 6px;
+    padding: 4px;
     border: 1px solid color-mix(in srgb, var(--cta-bg) 16%, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-md);
     background: rgba(8, 9, 12, 0.54);
@@ -232,7 +242,7 @@
 .user-menu-panel a,
 .catalog-sidebar-link,
 .catalog-type-option {
-    min-height: 42px;
+    min-height: 38px;
     text-decoration: none;
     font-weight: 750;
 }
@@ -242,11 +252,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 18px;
+    padding: 0 14px;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     color: #d7dce5;
     transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.theme-toggle,
+.user-menu-trigger {
+    min-height: 38px;
 }
 
 .app-nav a:hover {
