@@ -17,12 +17,12 @@
     min-width: 0;
     overflow: hidden;
     padding: 38px 42px;
-    border: 1px solid var(--border-color);
+    border: 1px solid color-mix(in srgb, var(--cta-bg) 18%, rgba(255, 255, 255, 0.12));
     border-radius: var(--radius-lg);
     background:
-        radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--cta-bg) 22%, transparent), transparent 30%),
-        linear-gradient(135deg, color-mix(in srgb, var(--surface-color) 90%, #000), color-mix(in srgb, var(--cta-bg) 10%, var(--surface-color)));
-    box-shadow: var(--shadow-soft);
+        radial-gradient(circle at 10% 16%, color-mix(in srgb, var(--cta-bg) 24%, transparent), transparent 30%),
+        linear-gradient(135deg, #18191f, color-mix(in srgb, var(--surface-color) 86%, #000) 54%, #111216);
+    box-shadow: 0 18px 52px rgba(0, 0, 0, 0.42);
 }
 
 .profile-hero-card::after {
@@ -33,7 +33,7 @@
     width: 360px;
     height: 360px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--cta-bg) 16%, transparent);
+    background: color-mix(in srgb, var(--cta-bg) 12%, transparent);
     pointer-events: none;
 }
 
@@ -57,12 +57,16 @@
     width: 96px;
     height: 96px;
     flex: 0 0 auto;
+    border: 1px solid color-mix(in srgb, var(--cta-bg) 72%, #ffffff);
     border-radius: var(--radius-md);
-    background: var(--cta-bg);
+    background:
+        radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.38), transparent 28%),
+        linear-gradient(145deg, var(--cta-hover), var(--cta-bg));
     color: var(--cta-text);
     font-family: var(--font-display);
     font-size: 2.4rem;
     font-weight: 800;
+    box-shadow: 0 0 34px color-mix(in srgb, var(--cta-bg) 26%, transparent);
 }
 
 .profile-summary-grid {
@@ -80,10 +84,10 @@
     min-width: 0;
     min-height: 112px;
     padding: 20px;
-    border: 1px solid color-mix(in srgb, var(--cta-bg) 18%, var(--border-color));
+    border: 1px solid color-mix(in srgb, var(--cta-bg) 22%, rgba(255, 255, 255, 0.12));
     border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--surface-muted) 86%, transparent);
-    box-shadow: var(--shadow-soft);
+    background: rgba(8, 9, 12, 0.42);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), var(--shadow-soft);
     overflow-wrap: anywhere;
 }
 
