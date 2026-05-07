@@ -8,7 +8,7 @@
         {% if item.is_favorite %}
         <span class="floating-badge">Favorito</span>
         {% endif %}
-        {% if item.image_source %}
+        {% if item.image_source and item.image_source != "placeholder" %}
         <span class="floating-badge floating-badge--source">{{ item.image_source|title }}</span>
         {% endif %}
 

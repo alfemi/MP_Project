@@ -314,6 +314,25 @@
         font-size: 0.78rem;
     }
 
+    .card-placeholder,
+    .detail-poster--placeholder {
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .placeholder-mark {
+        width: 38px;
+        height: 38px;
+    }
+
+    .placeholder-mark::before {
+        font-size: 0.72rem;
+    }
+
+    .placeholder-badge {
+        font-size: 0.62rem;
+    }
+
     .content-card-actions {
         display: grid;
         gap: 8px;

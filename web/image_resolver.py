@@ -105,7 +105,7 @@ class ContentImageService:
             )
             return {'url': title_fallback, 'source': 'search'}
 
-        logger.warning(
+        logger.debug(
             "No image resolved for content %s. Checked fields=%s available_keys=%s",
             item_id or "unknown",
             ", ".join(cls.EXTERNAL_IMAGE_KEYS),

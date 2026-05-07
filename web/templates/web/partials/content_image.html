@@ -4,8 +4,9 @@
 <img src="{{ image_url }}" alt="{% if alt_text %}{{ alt_text }}{% else %}Póster de {{ title }}{% endif %}" class="{{ image_class|default:'card-image' }}" loading="lazy" onerror="this.onerror=null;this.src='{% static 'web/content-placeholder.svg' %}';this.classList.add('is-placeholder-image');">
 {% else %}
 <div class="{{ placeholder_class|default:'card-placeholder' }}" role="img" aria-label="Póster no disponible para {{ title }}">
+    <span class="placeholder-mark" aria-hidden="true"></span>
     <span class="placeholder-badge">Sin imagen</span>
-    <strong>{{ title }}</strong>
+    <strong>{{ title|default:"Contenido sin imagen" }}</strong>
     {% if subtitle %}
     <small>{{ subtitle }}</small>
     {% endif %}

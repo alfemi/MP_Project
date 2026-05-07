@@ -354,24 +354,94 @@
 
 .card-placeholder,
 .detail-poster--placeholder {
+    position: relative;
+    isolation: isolate;
     display: grid;
     place-items: center;
     align-content: center;
-    gap: 9px;
+    gap: 10px;
     width: 100%;
     height: 100%;
-    padding: 16px;
+    overflow: hidden;
+    padding: 18px;
     background:
-        radial-gradient(circle at 76% 18%, color-mix(in srgb, var(--cta-bg) 30%, transparent), transparent 42%),
-        linear-gradient(145deg, #242424, #101010);
+        radial-gradient(circle at 78% 16%, color-mix(in srgb, var(--cta-bg) 34%, transparent), transparent 34%),
+        radial-gradient(circle at 18% 86%, color-mix(in srgb, var(--cta-bg) 18%, transparent), transparent 38%),
+        linear-gradient(145deg, #252930, #111318 54%, #090a0d);
     color: #f8fafc;
     text-align: center;
 }
 
+.card-placeholder::before,
+.detail-poster--placeholder::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    z-index: -1;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: inherit;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent);
+}
+
+.card-placeholder::after,
+.detail-poster--placeholder::after {
+    content: "";
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    left: 18px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, var(--cta-bg), transparent);
+    opacity: 0.82;
+}
+
+.placeholder-mark {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--cta-bg) 70%, rgba(255, 255, 255, 0.18));
+    border-radius: 50%;
+    background:
+        radial-gradient(circle, color-mix(in srgb, var(--cta-bg) 22%, transparent), transparent 66%),
+        rgba(8, 10, 14, 0.58);
+    box-shadow: 0 0 30px color-mix(in srgb, var(--cta-bg) 22%, transparent);
+}
+
+.placeholder-mark::before {
+    content: "SS";
+    color: var(--cta-bg);
+    font-family: var(--font-display);
+    font-size: 0.86rem;
+    font-weight: 900;
+}
+
 .card-placeholder strong {
     display: -webkit-box;
+    max-width: 100%;
     overflow: hidden;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 0.45vw + 0.9rem, 1.26rem);
+    line-height: 1.12;
     -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow-wrap: anywhere;
+}
+
+.card-placeholder small {
+    display: -webkit-box;
+    max-width: 100%;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 0.78rem;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 
@@ -380,8 +450,44 @@
 }
 
 .placeholder-badge {
-    background: color-mix(in srgb, var(--cta-bg) 18%, rgba(255, 255, 255, 0.12));
-    color: var(--text-color);
+    border: 1px solid color-mix(in srgb, var(--cta-bg) 36%, rgba(255, 255, 255, 0.14));
+    background: rgba(8, 10, 14, 0.42);
+    color: color-mix(in srgb, var(--cta-bg) 82%, #fff);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.detail-poster--placeholder {
+    min-height: 420px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-strong);
+}
+
+.detail-poster--placeholder .placeholder-mark {
+    width: 64px;
+    height: 64px;
+}
+
+.detail-poster--placeholder strong {
+    max-width: 18ch;
+    font-size: clamp(1.35rem, 1.2vw + 1rem, 2.1rem);
+}
+
+.card-image.is-placeholder-image,
+.detail-poster.is-placeholder-image {
+    object-fit: contain;
+    padding: 16%;
+    background:
+        radial-gradient(circle at 76% 18%, color-mix(in srgb, var(--cta-bg) 22%, transparent), transparent 40%),
+        linear-gradient(145deg, #252930, #111318 54%, #090a0d);
+}
+
+.content-card:hover .card-image.is-placeholder-image,
+.favorite-card:hover .card-image.is-placeholder-image,
+.recommendation-card:hover .card-image.is-placeholder-image {
+    transform: none;
 }
 
 .floating-badge {
